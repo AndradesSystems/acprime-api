@@ -7,7 +7,7 @@ export const app = express();
 
 const allowedOrigins = [
   "http://localhost:8080",
-  "https://acprime-api.onrender.com"
+  "https://acprime.vercel.app"
 ];
 
 app.use(
