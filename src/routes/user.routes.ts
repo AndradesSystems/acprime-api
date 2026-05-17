@@ -16,7 +16,7 @@ router.post("/", withAdmin(UserController.createUser));
 router.get("/assinantes", (UserController.listAssinantes));
 
 // Criar assinante: POST /users/assinantes
-router.post("/assinantes", withAdmin(UserController.createAssinante));
+router.post("/assinantes", (UserController.createAssinante));
 
 // Gestão por ID: GET, PUT e DELETE /users/:id
 router.get("/:id", withAdmin(UserController.getById));
