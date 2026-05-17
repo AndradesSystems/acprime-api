@@ -13,7 +13,7 @@ router.post("/", withAdmin(UserController.createUser));
 // --- NOVAS ROTAS (Substituem as do antigo Subscriber) ---
 
 // Listar assinantes: GET /users/assinantes
-router.get("/assinantes", withAdmin(UserController.listAssinantes));
+router.get("/assinantes", (UserController.listAssinantes));
 
 // Criar assinante: POST /users/assinantes
 router.post("/assinantes", withAdmin(UserController.createAssinante));
