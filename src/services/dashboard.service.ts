@@ -21,6 +21,9 @@ export class DashboardService {
       ? endOfDay(new Date(endDate))
       : endOfDay(endOfMonth(new Date()));
 
+    // Helper para garantir aproximação e arredondamento financeiro de 2 casas decimais
+    const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
+
     // =========================================================================
     // 1. TOTAL EMPRESTADO (SNAPSHOT GERAL)
     // =========================================================================
@@ -40,8 +43,13 @@ export class DashboardService {
       else if (c.periodicity === "MONTHLY") subTotalEmprestado.mensal += v;
     });
 
+    // Arredondando os subvalores para o payload do front
+    subTotalEmprestado.diario = round2(subTotalEmprestado.diario);
+    subTotalEmprestado.semanal = round2(subTotalEmprestado.semanal);
+    subTotalEmprestado.mensal = round2(subTotalEmprestado.mensal);
+
     // =========================================================================
-    // 2. TOTAL RECEBIDO (REALIZADO - CAIXA) - AJUSTADO PARA EVITAR DUPLICAÇÃO
+    // 2. TOTAL RECEBIDO (REALIZADO - CAIXA)
     // =========================================================================
     const payments = await prisma.paymentHistory.findMany({
       where: {
@@ -54,12 +62,8 @@ export class DashboardService {
     const subTotalRecebido = { viaParcelas: 0, viaMensal: 0, viaTaxas: 0 };
 
     payments.forEach((p) => {
-      // Valor total que saiu do bolso do cliente
       const valorTotalRegistro = Number(p.valorPago);
-      // Taxa (pagoTaxa), ignorando multaCobrada conforme solicitado
       const taxa = Number(p.pagoTaxa || 0);
-
-      // O valor "limpo" (sem a taxa) para não duplicar na soma final
       const valorLimpo = valorTotalRegistro - taxa;
 
       subTotalRecebido.viaTaxas += taxa;
@@ -71,8 +75,12 @@ export class DashboardService {
       }
     });
 
+    subTotalRecebido.viaParcelas = round2(subTotalRecebido.viaParcelas);
+    subTotalRecebido.viaMensal = round2(subTotalRecebido.viaMensal);
+    subTotalRecebido.viaTaxas = round2(subTotalRecebido.viaTaxas);
+
     // =========================================================================
-    // 3. A RECEBER (PREVISÃO)
+    // 3. A RECEBER (PREVISÃO DE JUROS E MONTANTES)
     // =========================================================================
 
     // A. PARCELAS (Diário/Semanal)
@@ -128,12 +136,9 @@ export class DashboardService {
       principalMensalPendente += p;
     });
 
-    const totalJurosGeralAReceber =
-      jurosExtraidosParcelas + jurosMensalPrevisto + taxasMensalPrevistas;
-
-    const totalMontanteAReceber =
-      valorTotalParcelas +
-      (principalMensalPendente + jurosMensalPrevisto + taxasMensalPrevistas);
+    // Consolidação de Cálculos Macros com Proteção Numérica
+    const totalJurosGeralAReceber = round2(jurosExtraidosParcelas + jurosMensalPrevisto + taxasMensalPrevistas);
+    const totalMontanteAReceber = round2(valorTotalParcelas + (principalMensalPendente + jurosMensalPrevisto + taxasMensalPrevistas));
 
     // =========================================================================
     // 4. CONTRATOS RECENTES
@@ -158,7 +163,7 @@ export class DashboardService {
     const recentContracts = recentContractsData.map((c) => {
       const principal = Number(c.valorPrincipal);
       const percentual = Number(c.jurosPercent || 0);
-      const lucroCalculado = principal * (percentual / 100);
+      const lucroCalculado = round2(principal * (percentual / 100));
 
       return {
         id: c.id,
@@ -174,29 +179,32 @@ export class DashboardService {
     });
 
     return {
-      totalEmprestado:
+      totalEmprestado: round2(
         subTotalEmprestado.diario +
         subTotalEmprestado.semanal +
-        subTotalEmprestado.mensal,
+        subTotalEmprestado.mensal
+      ),
       subTotalEmprestado,
 
       jurosETaxasAReceber: totalJurosGeralAReceber,
+      // 🎯 MODIFICADO: Agora estruturado exatamente com os nomes que seu card do front-end lê
       subJurosAReceber: {
-        juros: jurosExtraidosParcelas + jurosMensalPrevisto,
-        taxas: taxasMensalPrevistas,
+        jurosMensais: round2(jurosMensalPrevisto),
+        jurosParcelados: round2(jurosExtraidosParcelas),
+        taxas: round2(taxasMensalPrevistas),
       },
 
       totalMontanteAReceber,
       subMontanteAReceber: {
-        parcelas: valorTotalParcelas,
-        mensal:
-          principalMensalPendente + jurosMensalPrevisto + taxasMensalPrevistas,
+        parcelas: round2(valorTotalParcelas),
+        mensal: round2(principalMensalPendente + jurosMensalPrevisto + taxasMensalPrevistas),
       },
 
-      totalRecebido:
+      totalRecebido: round2(
         subTotalRecebido.viaParcelas +
         subTotalRecebido.viaMensal +
-        subTotalRecebido.viaTaxas,
+        subTotalRecebido.viaTaxas
+      ),
       subTotalRecebido,
 
       recentContracts,
