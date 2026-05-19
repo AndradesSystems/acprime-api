@@ -257,18 +257,43 @@ export class ContractService {
     });
   }
 
-  /* =========================================================
-        🔍 GET BY ID
+/* =========================================================
+      🔍 LIST BY CLIENT ID (Novo método para o seu endpoint)
      ========================================================= */
-  static async getById(id: string, userId: string) {
-    const c = await prisma.contract.findFirst({
-      where: { id, userId },
+  static async listByClientId(clientId: string, userId: string) {
+    // Usamos findMany pois um cliente pode ter mais de um contrato
+    const contracts = await prisma.contract.findMany({
+      where: { 
+        clientId, // Filtra pelo cliente correto
+        userId    // Garante segurança: apenas contratos do usuário logado
+      },
       include: {
         client: true,
         payments: { orderBy: { dataPagamento: "desc" } },
         installments: { orderBy: { numeroParcela: "asc" } },
       },
     });
+
+    // Retorna a lista (se estiver vazia, retorna [], o que é o padrão REST para listagens)
+    return contracts;
+  }
+
+  /* =========================================================
+      🔍 GET BY ID (Seu método original corrigido)
+     ========================================================= */
+  static async getById(contractId: string, userId: string) {
+    const c = await prisma.contract.findFirst({
+      where: { 
+        id: contractId, 
+        userId 
+      },
+      include: {
+        client: true,
+        payments: { orderBy: { dataPagamento: "desc" } },
+        installments: { orderBy: { numeroParcela: "asc" } },
+      },
+    });
+
     if (!c) throw new AppError("Contrato não encontrado", 404);
     return c;
   }

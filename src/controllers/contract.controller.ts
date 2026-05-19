@@ -59,13 +59,14 @@ export class ContractController {
     try {
       const { clientId } = req.params;
 
-      if (!clientId || typeof clientId !== 'string') {
+      if (!clientId || typeof clientId !== "string") {
         return res.status(400).json({
           error: "O ID do cliente é obrigatório."
         });
       }
 
-      const result = await ContractService.getById(clientId, auth.sub);
+      // Passando clientId e o ID do usuário autenticado (auth.sub)
+      const result = await ContractService.listByClientId(clientId, auth.sub);
 
       return res.json(result);
     } catch (e) {

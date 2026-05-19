@@ -9,12 +9,10 @@ import clientRoutes from "./client.routes";
 import contractRoutes from "./contract.routes";
 import paymentRoutes from "./payment.routes";
 import { financeRoutes } from "./finance.routes";
+import { whatsappRoutes } from "./whatsapp.routes"; // Importando as novas rotas do WhatsApp
 import { BackupController } from "../controllers/backup.controller";
 import { withAdmin } from "../middlewares/auth.wrapper";
 import taxaRoutes from "./taxa.routes";
-
-
-
 
 const router = Router();
 
@@ -35,6 +33,7 @@ router.use("/client", clientRoutes);
 router.use("/contract", contractRoutes);
 router.use("/taxas", taxaRoutes);
 router.use("/payment", paymentRoutes);
+router.use("/whatsapp", whatsappRoutes);
 
 
 export default router;
