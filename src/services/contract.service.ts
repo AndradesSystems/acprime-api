@@ -216,7 +216,7 @@ export class ContractService {
       where,
       orderBy: { vencimentoEm: "asc" },
       include: {
-        client: { select: { nome: true } },
+        client: { select: { nome: true, telefone: true } },
         installments: {
           where: { status: "PENDENTE" },
           take: 1,

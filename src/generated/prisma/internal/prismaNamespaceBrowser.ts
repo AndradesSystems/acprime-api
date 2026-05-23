@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  WhatsappSession: 'WhatsappSession',
   Client: 'Client',
   Contract: 'Contract',
   ContractInstallment: 'ContractInstallment',
@@ -92,6 +93,19 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const WhatsappSessionScalarFieldEnum = {
+  id: 'id',
+  pastaAuth: 'pastaAuth',
+  status: 'status',
+  sessionData: 'sessionData',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId'
+} as const
+
+export type WhatsappSessionScalarFieldEnum = (typeof WhatsappSessionScalarFieldEnum)[keyof typeof WhatsappSessionScalarFieldEnum]
 
 
 export const ClientScalarFieldEnum = {

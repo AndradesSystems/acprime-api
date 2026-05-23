@@ -47,6 +47,11 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model WhatsappSession
+ * 
+ */
+export type WhatsappSession = Prisma.WhatsappSessionModel
+/**
  * Model Client
  * 
  */

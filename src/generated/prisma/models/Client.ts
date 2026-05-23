@@ -481,10 +481,6 @@ export type ClientUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.ClientScalarWhereInput | Prisma.ClientScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type ClientCreateNestedOneWithoutContractsInput = {
   create?: Prisma.XOR<Prisma.ClientCreateWithoutContractsInput, Prisma.ClientUncheckedCreateWithoutContractsInput>
   connectOrCreate?: Prisma.ClientCreateOrConnectWithoutContractsInput

@@ -5,40 +5,69 @@ import { type AuthPayload } from "../lib/jwt";
 export class WhatsAppController {
   
   /**
-   * GET /api/whatsapp/qrcode
-   * Busca ou gera o QR Code para o usuário logado escanear
+   * POST /api/whatsapp/connect
+   * Liga o motor do WhatsApp (Baileys) para o usuário logado.
+   * Disparado quando o usuário clica no botão "Conectar WhatsApp" no painel.
    */
-  static async getQrCode(
+  static async connect(
     req: Request,
     res: Response,
     next: NextFunction,
     auth: AuthPayload
   ) {
     try {
-      // 🟢 Ajustado: Pega o ID único do usuário logado via payload do JWT (auth.sub)
+      const userId = auth.sub;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
+
+      // Dispara a inicialização do socket em background
+      WhatsAppService.conectarWhatsApp(String(userId));
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "Inicializando motor do WhatsApp. Busque o status para obter o QR Code." 
+      });
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  /**
+   * GET /api/whatsapp/status
+   * Retorna o estado atual da conexão ('CONNECTING', 'QRCODE', 'OPEN', 'CLOSED') 
+   * e entrega a string do QR Code caso ela exista na memória RAM.
+   */
+  static async getStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    auth: AuthPayload
+  ) {
+    try {
       const userId = auth.sub; 
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado." });
       }
 
-      // Chama o método do serviço da Evolution API
-      const base64QrCode = await WhatsAppService.getQrCode(userId);
+      // Busca o status atual do objeto global na memória RAM através do Service
+      const statusWhatsApp = await WhatsAppService.getStatus(String(userId));
 
-      // Devolve o Base64 pronto para o seu front-end renderizar
+      // Devolve o JSON completo para o front-end tomar as decisões de interface
       return res.status(200).json({ 
         success: true, 
-        qrcode: base64QrCode 
+        data: statusWhatsApp 
       });
     } catch (e) {
-      // 🟢 Ajustado: Segue o padrão do seu projeto repassando o erro para o middleware global
       return next(e);
     }
   }
 
   /**
    * POST /api/whatsapp/send
-   * Dispara uma mensagem usando a instância do usuário logado
+   * Dispara uma mensagem usando a instância ativa do usuário logado na RAM
    */
   static async sendMessage(
     req: Request,
@@ -47,7 +76,6 @@ export class WhatsAppController {
     auth: AuthPayload
   ) {
     try {
-      // 🟢 Ajustado: Pega o ID único do usuário logado via payload do JWT (auth.sub)
       const userId = auth.sub;
       const { phone, message } = req.body;
 
@@ -55,18 +83,48 @@ export class WhatsAppController {
         return res.status(401).json({ error: "Usuário não autenticado." });
       }
 
-      // Validação básica dos campos obrigatórios
+      // Validação dos campos obrigatórios do corpo da requisição
       if (!phone || !message) {
         return res.status(400).json({ error: "Telefone e mensagem são obrigatórios." });
       }
 
-      // Dispara a mensagem passando o ID do usuário como referência da instância
-      const result = await WhatsAppService.sendMessage(userId, phone, message);
+      // Dispara o envio checando o JID correto através do Baileys
+      const result = await WhatsAppService.sendMessage(String(userId), phone, message);
 
       return res.status(200).json({ 
         success: true, 
         message: "Mensagem enviada com sucesso!",
         data: result 
+      });
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  /**
+   * 🟢 NOVO: POST /api/whatsapp/disconnect
+   * Desconecta o WhatsApp da tomada, limpa a memória RAM e zera as credenciais no banco.
+   * Disparado quando o usuário clica em "Desconectar" ou "Sair" na interface.
+   */
+  static async disconnect(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    auth: AuthPayload
+  ) {
+    try {
+      const userId = auth.sub;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
+
+      // Executa a limpa completa no banco e na memória
+      await WhatsAppService.desconectarWhatsApp(String(userId));
+
+      return res.status(200).json({ 
+        success: true, 
+        message: "WhatsApp desconectado com sucesso e credenciais removidas do servidor." 
       });
     } catch (e) {
       return next(e);

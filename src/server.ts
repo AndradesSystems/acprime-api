@@ -1,11 +1,12 @@
 import { app } from "./app";
-import { initCronJobs } from "./crons";
+import { conectarWhatsApp, enviarMensagemLivre } from "./whapp";
 
 const PORT = process.env.PORT || 4004;
 
-// Inicializa os agendamentos
-// initCronJobs();
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, async () => {
+  console.log(`\n==================================================`);
+  console.log(`🚀 [SERVER-START] Servidor rodando na porta ${PORT}`);
+  console.log(`==================================================`);
+ 
 });
+

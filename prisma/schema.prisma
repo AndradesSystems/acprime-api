@@ -82,7 +82,28 @@ model User {
   payments         PaymentHistory[]
   balanceLogs      BalanceLog[]
 
+// Relacionamento adicionado aqui:
+  whatsappSession  WhatsappSession?
+
   @@map("users")
+}
+
+model WhatsappSession {
+  id        String   @id @default(cuid())
+  pastaAuth String   @unique // Ex: "auth_user_1"
+  status    String   @default("CLOSED") // 🟢 Novo: Para controlar na tela se está OPEN, CLOSED ou CONNECTING
+  
+  // 🟢 O campo mágico da Opção A: Guarda todo o cache do Baileys como texto longo no PostgreSQL
+  sessionData String?  @db.Text 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Chave estrangeira e relação com a tabela User
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_sessions")
 }
 
 model Client {

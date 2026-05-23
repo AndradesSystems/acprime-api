@@ -269,6 +269,7 @@ export type UserWhereInput = {
   expenses?: Prisma.PersonalExpenseListRelationFilter
   payments?: Prisma.PaymentHistoryListRelationFilter
   balanceLogs?: Prisma.BalanceLogListRelationFilter
+  whatsappSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
 }
 
 export type UserOrderByWithRelationInput = {
@@ -288,6 +289,7 @@ export type UserOrderByWithRelationInput = {
   expenses?: Prisma.PersonalExpenseOrderByRelationAggregateInput
   payments?: Prisma.PaymentHistoryOrderByRelationAggregateInput
   balanceLogs?: Prisma.BalanceLogOrderByRelationAggregateInput
+  whatsappSession?: Prisma.WhatsappSessionOrderByWithRelationInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -310,6 +312,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   expenses?: Prisma.PersonalExpenseListRelationFilter
   payments?: Prisma.PaymentHistoryListRelationFilter
   balanceLogs?: Prisma.BalanceLogListRelationFilter
+  whatsappSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
 }, "id" | "cpf" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -365,6 +368,7 @@ export type UserCreateInput = {
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -384,6 +388,7 @@ export type UserUncheckedCreateInput = {
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -403,6 +408,7 @@ export type UserUpdateInput = {
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -422,6 +428,7 @@ export type UserUncheckedUpdateInput = {
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -549,6 +556,20 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
+export type UserCreateNestedOneWithoutWhatsappSessionInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWhatsappSessionInput, Prisma.UserUncheckedCreateWithoutWhatsappSessionInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWhatsappSessionInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutWhatsappSessionNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWhatsappSessionInput, Prisma.UserUncheckedCreateWithoutWhatsappSessionInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWhatsappSessionInput
+  upsert?: Prisma.UserUpsertWithoutWhatsappSessionInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWhatsappSessionInput, Prisma.UserUpdateWithoutWhatsappSessionInput>, Prisma.UserUncheckedUpdateWithoutWhatsappSessionInput>
+}
+
 export type UserCreateNestedOneWithoutClientsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutClientsInput, Prisma.UserUncheckedCreateWithoutClientsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutClientsInput
@@ -619,6 +640,98 @@ export type UserUpdateOneRequiredWithoutBalanceLogsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBalanceLogsInput, Prisma.UserUpdateWithoutBalanceLogsInput>, Prisma.UserUncheckedUpdateWithoutBalanceLogsInput>
 }
 
+export type UserCreateWithoutWhatsappSessionInput = {
+  id?: string
+  nome: string
+  cpf: string
+  email: string
+  senhaHash: string
+  tipo?: $Enums.UserType
+  status?: $Enums.UserStatus
+  saldoOperacional?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimento?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clients?: Prisma.ClientCreateNestedManyWithoutUserInput
+  contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
+  expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
+  balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutWhatsappSessionInput = {
+  id?: string
+  nome: string
+  cpf: string
+  email: string
+  senhaHash: string
+  tipo?: $Enums.UserType
+  status?: $Enums.UserStatus
+  saldoOperacional?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimento?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
+  contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
+  expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
+  balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutWhatsappSessionInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWhatsappSessionInput, Prisma.UserUncheckedCreateWithoutWhatsappSessionInput>
+}
+
+export type UserUpsertWithoutWhatsappSessionInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWhatsappSessionInput, Prisma.UserUncheckedUpdateWithoutWhatsappSessionInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWhatsappSessionInput, Prisma.UserUncheckedCreateWithoutWhatsappSessionInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWhatsappSessionInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWhatsappSessionInput, Prisma.UserUncheckedUpdateWithoutWhatsappSessionInput>
+}
+
+export type UserUpdateWithoutWhatsappSessionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  nome?: Prisma.StringFieldUpdateOperationsInput | string
+  cpf?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  senhaHash?: Prisma.StringFieldUpdateOperationsInput | string
+  tipo?: Prisma.EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  saldoOperacional?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
+  contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
+  expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
+  balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWhatsappSessionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  nome?: Prisma.StringFieldUpdateOperationsInput | string
+  cpf?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  senhaHash?: Prisma.StringFieldUpdateOperationsInput | string
+  tipo?: Prisma.EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  saldoOperacional?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
+  contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
+  expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutClientsInput = {
   id?: string
   nome: string
@@ -635,6 +748,7 @@ export type UserCreateWithoutClientsInput = {
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutClientsInput = {
@@ -653,6 +767,7 @@ export type UserUncheckedCreateWithoutClientsInput = {
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutClientsInput = {
@@ -687,6 +802,7 @@ export type UserUpdateWithoutClientsInput = {
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutClientsInput = {
@@ -705,6 +821,7 @@ export type UserUncheckedUpdateWithoutClientsInput = {
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutContractsInput = {
@@ -723,6 +840,7 @@ export type UserCreateWithoutContractsInput = {
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutContractsInput = {
@@ -741,6 +859,7 @@ export type UserUncheckedCreateWithoutContractsInput = {
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutContractsInput = {
@@ -775,6 +894,7 @@ export type UserUpdateWithoutContractsInput = {
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutContractsInput = {
@@ -793,6 +913,7 @@ export type UserUncheckedUpdateWithoutContractsInput = {
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPaymentsInput = {
@@ -811,6 +932,7 @@ export type UserCreateWithoutPaymentsInput = {
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPaymentsInput = {
@@ -829,6 +951,7 @@ export type UserUncheckedCreateWithoutPaymentsInput = {
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPaymentsInput = {
@@ -863,6 +986,7 @@ export type UserUpdateWithoutPaymentsInput = {
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentsInput = {
@@ -881,6 +1005,7 @@ export type UserUncheckedUpdateWithoutPaymentsInput = {
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutExpensesInput = {
@@ -899,6 +1024,7 @@ export type UserCreateWithoutExpensesInput = {
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutExpensesInput = {
@@ -917,6 +1043,7 @@ export type UserUncheckedCreateWithoutExpensesInput = {
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
   balanceLogs?: Prisma.BalanceLogUncheckedCreateNestedManyWithoutUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutExpensesInput = {
@@ -951,6 +1078,7 @@ export type UserUpdateWithoutExpensesInput = {
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutExpensesInput = {
@@ -969,6 +1097,7 @@ export type UserUncheckedUpdateWithoutExpensesInput = {
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
   balanceLogs?: Prisma.BalanceLogUncheckedUpdateManyWithoutUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateWithoutBalanceLogsInput = {
@@ -987,6 +1116,7 @@ export type UserCreateWithoutBalanceLogsInput = {
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
+  whatsappSession?: Prisma.WhatsappSessionCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBalanceLogsInput = {
@@ -1005,6 +1135,7 @@ export type UserUncheckedCreateWithoutBalanceLogsInput = {
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutBalanceLogsInput = {
@@ -1039,6 +1170,7 @@ export type UserUpdateWithoutBalanceLogsInput = {
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBalanceLogsInput = {
@@ -1057,6 +1189,7 @@ export type UserUncheckedUpdateWithoutBalanceLogsInput = {
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  whatsappSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutUserNestedInput
 }
 
 
@@ -1143,6 +1276,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   expenses?: boolean | Prisma.User$expensesArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   balanceLogs?: boolean | Prisma.User$balanceLogsArgs<ExtArgs>
+  whatsappSession?: boolean | Prisma.User$whatsappSessionArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1195,6 +1329,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   expenses?: boolean | Prisma.User$expensesArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   balanceLogs?: boolean | Prisma.User$balanceLogsArgs<ExtArgs>
+  whatsappSession?: boolean | Prisma.User$whatsappSessionArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1208,6 +1343,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     expenses: Prisma.$PersonalExpensePayload<ExtArgs>[]
     payments: Prisma.$PaymentHistoryPayload<ExtArgs>[]
     balanceLogs: Prisma.$BalanceLogPayload<ExtArgs>[]
+    whatsappSession: Prisma.$WhatsappSessionPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1620,6 +1756,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   expenses<T extends Prisma.User$expensesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$expensesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalExpensePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payments<T extends Prisma.User$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   balanceLogs<T extends Prisma.User$balanceLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$balanceLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  whatsappSession<T extends Prisma.User$whatsappSessionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$whatsappSessionArgs<ExtArgs>>): Prisma.Prisma__WhatsappSessionClient<runtime.Types.Result.GetResult<Prisma.$WhatsappSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2170,6 +2307,25 @@ export type User$balanceLogsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.BalanceLogScalarFieldEnum | Prisma.BalanceLogScalarFieldEnum[]
+}
+
+/**
+ * User.whatsappSession
+ */
+export type User$whatsappSessionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WhatsappSession
+   */
+  select?: Prisma.WhatsappSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WhatsappSession
+   */
+  omit?: Prisma.WhatsappSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WhatsappSessionInclude<ExtArgs> | null
+  where?: Prisma.WhatsappSessionWhereInput
 }
 
 /**

@@ -9,13 +9,34 @@ export const whatsappRoutes = Router();
    ========================================================================== */
 
 /**
- * 1. Conexão e QR Code
- * Retorna o Base64 do QR Code para o usuário logado escanear
- * GET /whatsapp/qrcode
+ * 1. Inicializar Motor do WhatsApp
+ * Acorda e ergue o socket do Baileys para o usuário autenticado na RAM.
+ * POST /api/whatsapp/connect
+ */
+whatsappRoutes.post(
+  "/connect", 
+  withAuth(WhatsAppController.connect)
+);
+
+/**
+ * 2. Monitoramento de Conexão e QR Code
+ * Retorna o status atual ('CONNECTING', 'QRCODE', 'OPEN', 'CLOSED') 
+ * e entrega a string de texto do QR Code para o front-end desenhar.
+ * GET /api/whatsapp/status
  */
 whatsappRoutes.get(
-  "/qrcode", 
-  withAuth(WhatsAppController.getQrCode)
+  "/status", 
+  withAuth(WhatsAppController.getStatus)
+);
+
+/**
+ * 🟢 4. Desconectar e Matar Instância
+ * Desconecta o WhatsApp, encerra o processo na memória RAM e limpa as credenciais do banco.
+ * POST /api/whatsapp/disconnect
+ */
+whatsappRoutes.post(
+  "/disconnect", 
+  withAuth(WhatsAppController.disconnect)
 );
 
 /* ==========================================================================
@@ -23,9 +44,9 @@ whatsappRoutes.get(
    ========================================================================== */
 
 /**
- * 2. Envio de Mensagens Textuais
- * Dispara uma mensagem usando a instância do usuário logado como remetente
- * POST /whatsapp/send
+ * 3. Envio de Mensagens Textuais
+ * Dispara uma mensagem usando a instância ativa do usuário logado como remetente
+ * POST /api/whatsapp/send
  */
 whatsappRoutes.post(
   "/send", 
