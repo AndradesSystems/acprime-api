@@ -18,11 +18,16 @@ const qrCodesAtivos: { [key: string]: string } = {};
 // Dicionário para rastrear o status textual da conexão ('CONNECTING', 'OPEN', 'QRCODE', 'CLOSED')
 const statusConexoes: { [key: string]: 'CONNECTING' | 'OPEN' | 'QRCODE' | 'CLOSED' } = {};
 
+// Dicionário temporário na RAM para gerenciar as chaves dinâmicas do Baileys e evitar crashes em produção
+const estoqueChavesMemoria: { [userId: string]: { [type: string]: { [id: string]: any } } } = {};
+
 export class WhatsAppService {
 
     /**
-     * 🟢 ADAPTADOR DE ESTADO: Lê e grava as credenciais direto no banco de dados (Opção A)
+     * 🟢 ADAPTADOR DE ESTADO ALTERADO: Lê e grava as credenciais direto no banco de dados
+     * Armazena chaves dinâmicas na memória RAM para evitar erros 502 (Bad Gateway) em produção.
      */
+
     private static async usePrismaAuthState(userId: string): Promise<{ state: AuthenticationState, saveCreds: () => Promise<void> }> {
         // 1. Busca a sessão atual no banco de dados
         const sessao = await prisma.whatsappSession.findUnique({
@@ -39,17 +44,37 @@ export class WhatsAppService {
             }
         }
 
+        // Garante que exista um espaço alocado na memória para as chaves deste usuário específico
+        if (!estoqueChavesMemoria[userId]) {
+            estoqueChavesMemoria[userId] = {};
+        }
+
+        // Extração segura para o escopo do TypeScript
+        const chavesDoUsuario = estoqueChavesMemoria[userId] as Record<string, any>;
+
         return {
             state: {
                 creds,
-                // O Baileys usa chaves dinâmicas além das credenciais básicas. 
-                // Como salvamos tudo unificado na string, o keys gerencia o estado na memória enquanto roda.
+                // 🟢 Gerenciamento seguro de chaves dinâmicas do Baileys para contas novas em deploy
                 keys: {
-                    get: (type, ids) => ids.reduce((dict, id) => ({ ...dict, [id]: undefined }), {}),
-                    set: () => { } // Modificações maiores de chaves são tratadas nativamente por gatilhos do Baileys
+                    get: (type, ids) => {
+                        const dados: { [id: string]: any } = {};
+                        for (const id of ids) {
+                            dados[id] = chavesDoUsuario[type]?.[id];
+                        }
+                        return dados;
+                    },
+                    set: (data: any) => { // ➔ Forçamos 'data' como 'any' aqui para permitir a indexação dinâmica por string
+                        for (const type in data) {
+                            if (!chavesDoUsuario[type]) {
+                                chavesDoUsuario[type] = {};
+                            }
+                            Object.assign(chavesDoUsuario[type], data[type]);
+                        }
+                    }
                 }
             },
-            // 3. Função mágica acionada toda vez que o token muda (grava no banco em tempo real)
+            // 3. Função acionada toda vez que o token muda (grava no banco em tempo real)
             saveCreds: async () => {
                 const sessionDataString = JSON.stringify(creds, BufferJSON.replacer);
                 await prisma.whatsappSession.update({
@@ -100,7 +125,7 @@ export class WhatsAppService {
                 return;
             }
 
-            // 🟢 AGORA LÊ DIRETO DO BANCO DE DADOS (Substituído useMultiFileAuthState)
+            // Lê o estado estruturado direto do PostgreSQL / RAM
             const { state, saveCreds } = await this.usePrismaAuthState(userId);
 
             // Cria o Socket do Baileys
@@ -121,7 +146,7 @@ export class WhatsAppService {
                     console.log(`✨ [QR CODE] Novo código gerado para o usuário: ${nomeUsuario}`);
                     qrCodesAtivos[userId] = qr;
                     statusConexoes[userId] = 'QRCODE';
-                    
+
                     await prisma.whatsappSession.update({
                         where: { userId },
                         data: { status: 'QRCODE' }
@@ -134,7 +159,7 @@ export class WhatsAppService {
 
                     console.log(`\n❌ [CONEXÃO] [${nomeUsuario}] Conexão fechada. Status: ${erroStatusCode}`);
                     statusConexoes[userId] = 'CLOSED';
-                    
+
                     // Atualiza o status no banco de dados
                     await prisma.whatsappSession.update({
                         where: { userId },
@@ -148,6 +173,7 @@ export class WhatsAppService {
                             where: { userId },
                             data: { sessionData: null }
                         });
+                        delete estoqueChavesMemoria[userId]; // Limpa chaves da RAM
                     }
 
                     // Limpa rastros da memória
@@ -158,12 +184,12 @@ export class WhatsAppService {
                         console.log(`⏳ Reconectando automaticamente em 5 segundos...`);
                         setTimeout(() => this.conectarWhatsApp(userId), 5000);
                     }
-                } 
+                }
                 else if (connection === 'open') {
                     console.log(`\n✅ [${nomeUsuario}] WHATSAPP CONECTADO COM SUCESSO!`);
                     statusConexoes[userId] = 'OPEN';
                     delete qrCodesAtivos[userId];
-                    
+
                     // Salva o status de conectado no banco de dados
                     await prisma.whatsappSession.update({
                         where: { userId },
@@ -187,7 +213,7 @@ export class WhatsAppService {
     static async getStatus(userId: string) {
         const sessao = await prisma.whatsappSession.findUnique({ where: { userId } });
         const pastaAuth = sessao?.pastaAuth || `auth_${userId}`;
-        
+
         const estaNaRam = !!instanciasAtivas[pastaAuth];
         // Sincroniza o status vindo da RAM ou do banco
         const statusAtual = statusConexoes[userId] || sessao?.status || (estaNaRam ? 'OPEN' : 'CLOSED');
@@ -232,11 +258,11 @@ export class WhatsAppService {
             const [resultadoValidacao] = (await clientSock.onWhatsApp(apenasNumeros)) || [];
 
             if (!resultadoValidacao || !resultadoValidacao.exists) {
-                throw new Error('Este número não possui uma conta de WhatsApp ativa.');
+                throw new Error('Este número não possui uma conta de WhatsApp activa.');
             }
 
             const jidReal = resultadoValidacao.jid;
-            
+
             // Dispara o texto
             await clientSock.sendMessage(jidReal, { text: messageText });
             console.log(`✅ Mensagem enviada com sucesso para o JID: ${jidReal}`);
@@ -247,13 +273,13 @@ export class WhatsAppService {
             throw error;
         }
     }
+
     /**
      * 4. DESCONECTA O WHATSAPP: Encerra a sessão atual e limpa os dados do banco de dados.
-     * Chamado quando o usuário clica em "Desconectar" ou "Sair" na interface do Front-end.
      */
     static async desconectarWhatsApp(userId: string): Promise<boolean> {
         console.log(`\n📴 [WhatsAppService] Solicitando desconexão para o usuário: "${userId}"`);
-        
+
         try {
             // 1. Busca os dados da sessão no banco de dados
             const sessao = await prisma.whatsappSession.findUnique({
@@ -271,8 +297,7 @@ export class WhatsAppService {
             if (clientSock) {
                 try {
                     console.log(`➔ Encerrando socket ativo na memória para [${pastaAuth}]...`);
-                    // logout() avisa os servidores do WhatsApp que este aparelho está saindo voluntariamente
-                    await clientSock.logout(); 
+                    await clientSock.logout();
                     clientSock.end(undefined);
                 } catch (err) {
                     console.log(`⚠️ Aviso ao fechar socket (pode ser que já estivesse offline):`, err);
@@ -282,6 +307,7 @@ export class WhatsAppService {
             // 3. Limpa as variáveis globais de cache na memória RAM
             delete instanciasAtivas[pastaAuth];
             delete qrCodesAtivos[userId];
+            delete estoqueChavesMemoria[userId]; // Limpa o repositório de chaves dinâmicas
             statusConexoes[userId] = 'CLOSED';
 
             // 4. Reseta as informações no banco de dados PostgreSQL
