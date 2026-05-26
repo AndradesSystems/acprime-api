@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { ContractController } from "../controllers/contract.controller";
 import { withAuth } from "../middlewares/auth.wrapper";
-import { dispararNotificacaoManual } from "../crons";
 
 const router = Router();
 
@@ -31,7 +30,6 @@ router.post("/:id/notify", withAuth(async (req, res, next, auth) => {
     // const contrato = await ContractService.getById(id);
     // if (contrato.userId !== auth.sub) return res.status(403).json({ error: "Proibido" });
 
-    await dispararNotificacaoManual(id);
     
     return res.json({ 
       success: true, 

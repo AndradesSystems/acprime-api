@@ -46,6 +46,7 @@ export type UserMinAggregateOutputType = {
   vencimento: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  plan: $Enums.UserPlan | null
 }
 
 export type UserMaxAggregateOutputType = {
@@ -60,6 +61,7 @@ export type UserMaxAggregateOutputType = {
   vencimento: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  plan: $Enums.UserPlan | null
 }
 
 export type UserCountAggregateOutputType = {
@@ -74,6 +76,7 @@ export type UserCountAggregateOutputType = {
   vencimento: number
   createdAt: number
   updatedAt: number
+  plan: number
   _all: number
 }
 
@@ -98,6 +101,7 @@ export type UserMinAggregateInputType = {
   vencimento?: true
   createdAt?: true
   updatedAt?: true
+  plan?: true
 }
 
 export type UserMaxAggregateInputType = {
@@ -112,6 +116,7 @@ export type UserMaxAggregateInputType = {
   vencimento?: true
   createdAt?: true
   updatedAt?: true
+  plan?: true
 }
 
 export type UserCountAggregateInputType = {
@@ -126,6 +131,7 @@ export type UserCountAggregateInputType = {
   vencimento?: true
   createdAt?: true
   updatedAt?: true
+  plan?: true
   _all?: true
 }
 
@@ -227,6 +233,7 @@ export type UserGroupByOutputType = {
   vencimento: Date | null
   createdAt: Date
   updatedAt: Date
+  plan: $Enums.UserPlan
   _count: UserCountAggregateOutputType | null
   _avg: UserAvgAggregateOutputType | null
   _sum: UserSumAggregateOutputType | null
@@ -264,6 +271,7 @@ export type UserWhereInput = {
   vencimento?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  plan?: Prisma.EnumUserPlanFilter<"User"> | $Enums.UserPlan
   clients?: Prisma.ClientListRelationFilter
   contracts?: Prisma.ContractListRelationFilter
   expenses?: Prisma.PersonalExpenseListRelationFilter
@@ -284,6 +292,7 @@ export type UserOrderByWithRelationInput = {
   vencimento?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  plan?: Prisma.SortOrder
   clients?: Prisma.ClientOrderByRelationAggregateInput
   contracts?: Prisma.ContractOrderByRelationAggregateInput
   expenses?: Prisma.PersonalExpenseOrderByRelationAggregateInput
@@ -307,6 +316,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   vencimento?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  plan?: Prisma.EnumUserPlanFilter<"User"> | $Enums.UserPlan
   clients?: Prisma.ClientListRelationFilter
   contracts?: Prisma.ContractListRelationFilter
   expenses?: Prisma.PersonalExpenseListRelationFilter
@@ -327,6 +337,7 @@ export type UserOrderByWithAggregationInput = {
   vencimento?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  plan?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -349,6 +360,7 @@ export type UserScalarWhereWithAggregatesInput = {
   vencimento?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+  plan?: Prisma.EnumUserPlanWithAggregatesFilter<"User"> | $Enums.UserPlan
 }
 
 export type UserCreateInput = {
@@ -363,6 +375,7 @@ export type UserCreateInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
@@ -383,6 +396,7 @@ export type UserUncheckedCreateInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
@@ -403,6 +417,7 @@ export type UserUpdateInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
@@ -423,6 +438,7 @@ export type UserUncheckedUpdateInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
@@ -443,6 +459,7 @@ export type UserCreateManyInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
 }
 
 export type UserUpdateManyMutationInput = {
@@ -457,6 +474,7 @@ export type UserUpdateManyMutationInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -471,6 +489,7 @@ export type UserUncheckedUpdateManyInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -485,6 +504,7 @@ export type UserCountOrderByAggregateInput = {
   vencimento?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  plan?: Prisma.SortOrder
 }
 
 export type UserAvgOrderByAggregateInput = {
@@ -503,6 +523,7 @@ export type UserMaxOrderByAggregateInput = {
   vencimento?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  plan?: Prisma.SortOrder
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -517,6 +538,7 @@ export type UserMinOrderByAggregateInput = {
   vencimento?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  plan?: Prisma.SortOrder
 }
 
 export type UserSumOrderByAggregateInput = {
@@ -554,6 +576,10 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type EnumUserPlanFieldUpdateOperationsInput = {
+  set?: $Enums.UserPlan
 }
 
 export type UserCreateNestedOneWithoutWhatsappSessionInput = {
@@ -652,6 +678,7 @@ export type UserCreateWithoutWhatsappSessionInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
@@ -671,6 +698,7 @@ export type UserUncheckedCreateWithoutWhatsappSessionInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
@@ -706,6 +734,7 @@ export type UserUpdateWithoutWhatsappSessionInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
@@ -725,6 +754,7 @@ export type UserUncheckedUpdateWithoutWhatsappSessionInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
@@ -744,6 +774,7 @@ export type UserCreateWithoutClientsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
@@ -763,6 +794,7 @@ export type UserUncheckedCreateWithoutClientsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
@@ -798,6 +830,7 @@ export type UserUpdateWithoutClientsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
@@ -817,6 +850,7 @@ export type UserUncheckedUpdateWithoutClientsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
@@ -836,6 +870,7 @@ export type UserCreateWithoutContractsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
@@ -855,6 +890,7 @@ export type UserUncheckedCreateWithoutContractsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
@@ -890,6 +926,7 @@ export type UserUpdateWithoutContractsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
@@ -909,6 +946,7 @@ export type UserUncheckedUpdateWithoutContractsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
@@ -928,6 +966,7 @@ export type UserCreateWithoutPaymentsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
@@ -947,6 +986,7 @@ export type UserUncheckedCreateWithoutPaymentsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
@@ -982,6 +1022,7 @@ export type UserUpdateWithoutPaymentsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
@@ -1001,6 +1042,7 @@ export type UserUncheckedUpdateWithoutPaymentsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
@@ -1020,6 +1062,7 @@ export type UserCreateWithoutExpensesInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutCreatedByUserInput
@@ -1039,6 +1082,7 @@ export type UserUncheckedCreateWithoutExpensesInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutCreatedByUserInput
@@ -1074,6 +1118,7 @@ export type UserUpdateWithoutExpensesInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutCreatedByUserNestedInput
@@ -1093,6 +1138,7 @@ export type UserUncheckedUpdateWithoutExpensesInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutCreatedByUserNestedInput
@@ -1112,6 +1158,7 @@ export type UserCreateWithoutBalanceLogsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseCreateNestedManyWithoutUserInput
@@ -1131,6 +1178,7 @@ export type UserUncheckedCreateWithoutBalanceLogsInput = {
   vencimento?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  plan?: $Enums.UserPlan
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutUserInput
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutUserInput
   expenses?: Prisma.PersonalExpenseUncheckedCreateNestedManyWithoutUserInput
@@ -1166,6 +1214,7 @@ export type UserUpdateWithoutBalanceLogsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUpdateManyWithoutUserNestedInput
@@ -1185,6 +1234,7 @@ export type UserUncheckedUpdateWithoutBalanceLogsInput = {
   vencimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.EnumUserPlanFieldUpdateOperationsInput | $Enums.UserPlan
   clients?: Prisma.ClientUncheckedUpdateManyWithoutUserNestedInput
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutUserNestedInput
   expenses?: Prisma.PersonalExpenseUncheckedUpdateManyWithoutUserNestedInput
@@ -1271,6 +1321,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   vencimento?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  plan?: boolean
   clients?: boolean | Prisma.User$clientsArgs<ExtArgs>
   contracts?: boolean | Prisma.User$contractsArgs<ExtArgs>
   expenses?: boolean | Prisma.User$expensesArgs<ExtArgs>
@@ -1292,6 +1343,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   vencimento?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  plan?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1306,6 +1358,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   vencimento?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  plan?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -1320,9 +1373,10 @@ export type UserSelectScalar = {
   vencimento?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  plan?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nome" | "cpf" | "email" | "senhaHash" | "tipo" | "status" | "saldoOperacional" | "vencimento" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nome" | "cpf" | "email" | "senhaHash" | "tipo" | "status" | "saldoOperacional" | "vencimento" | "createdAt" | "updatedAt" | "plan", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   clients?: boolean | Prisma.User$clientsArgs<ExtArgs>
   contracts?: boolean | Prisma.User$contractsArgs<ExtArgs>
@@ -1357,6 +1411,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     vencimento: Date | null
     createdAt: Date
     updatedAt: Date
+    plan: $Enums.UserPlan
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1797,6 +1852,7 @@ export interface UserFieldRefs {
   readonly vencimento: Prisma.FieldRef<"User", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly plan: Prisma.FieldRef<"User", 'UserPlan'>
 }
     
 

@@ -89,7 +89,8 @@ export const UserScalarFieldEnum = {
   saldoOperacional: 'saldoOperacional',
   vencimento: 'vencimento',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  plan: 'plan'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -116,6 +117,7 @@ export const ClientScalarFieldEnum = {
   email: 'email',
   dataNascimento: 'dataNascimento',
   endereco: 'endereco',
+  images: 'images',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   userId: 'userId'

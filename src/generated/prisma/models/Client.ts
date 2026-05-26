@@ -58,6 +58,7 @@ export type ClientCountAggregateOutputType = {
   email: number
   dataNascimento: number
   endereco: number
+  images: number
   createdAt: number
   updatedAt: number
   userId: number
@@ -99,6 +100,7 @@ export type ClientCountAggregateInputType = {
   email?: true
   dataNascimento?: true
   endereco?: true
+  images?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -185,6 +187,7 @@ export type ClientGroupByOutputType = {
   email: string | null
   dataNascimento: Date | null
   endereco: string
+  images: string[]
   createdAt: Date
   updatedAt: Date
   userId: string
@@ -219,6 +222,7 @@ export type ClientWhereInput = {
   email?: Prisma.StringNullableFilter<"Client"> | string | null
   dataNascimento?: Prisma.DateTimeNullableFilter<"Client"> | Date | string | null
   endereco?: Prisma.StringFilter<"Client"> | string
+  images?: Prisma.StringNullableListFilter<"Client">
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   userId?: Prisma.StringFilter<"Client"> | string
@@ -234,6 +238,7 @@ export type ClientOrderByWithRelationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   dataNascimento?: Prisma.SortOrderInput | Prisma.SortOrder
   endereco?: Prisma.SortOrder
+  images?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -252,6 +257,7 @@ export type ClientWhereUniqueInput = Prisma.AtLeast<{
   telefone?: Prisma.StringFilter<"Client"> | string
   dataNascimento?: Prisma.DateTimeNullableFilter<"Client"> | Date | string | null
   endereco?: Prisma.StringFilter<"Client"> | string
+  images?: Prisma.StringNullableListFilter<"Client">
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   userId?: Prisma.StringFilter<"Client"> | string
@@ -267,6 +273,7 @@ export type ClientOrderByWithAggregationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   dataNascimento?: Prisma.SortOrderInput | Prisma.SortOrder
   endereco?: Prisma.SortOrder
+  images?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -286,6 +293,7 @@ export type ClientScalarWhereWithAggregatesInput = {
   email?: Prisma.StringNullableWithAggregatesFilter<"Client"> | string | null
   dataNascimento?: Prisma.DateTimeNullableWithAggregatesFilter<"Client"> | Date | string | null
   endereco?: Prisma.StringWithAggregatesFilter<"Client"> | string
+  images?: Prisma.StringNullableListFilter<"Client">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Client"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Client"> | Date | string
   userId?: Prisma.StringWithAggregatesFilter<"Client"> | string
@@ -299,6 +307,7 @@ export type ClientCreateInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutClientsInput
@@ -313,6 +322,7 @@ export type ClientUncheckedCreateInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -327,6 +337,7 @@ export type ClientUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutClientsNestedInput
@@ -341,6 +352,7 @@ export type ClientUncheckedUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -355,6 +367,7 @@ export type ClientCreateManyInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -368,6 +381,7 @@ export type ClientUpdateManyMutationInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -380,6 +394,7 @@ export type ClientUncheckedUpdateManyInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -395,6 +410,14 @@ export type ClientOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type ClientCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   nome?: Prisma.SortOrder
@@ -403,6 +426,7 @@ export type ClientCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   dataNascimento?: Prisma.SortOrder
   endereco?: Prisma.SortOrder
+  images?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -481,6 +505,15 @@ export type ClientUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.ClientScalarWhereInput | Prisma.ClientScalarWhereInput[]
 }
 
+export type ClientCreateimagesInput = {
+  set: string[]
+}
+
+export type ClientUpdateimagesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type ClientCreateNestedOneWithoutContractsInput = {
   create?: Prisma.XOR<Prisma.ClientCreateWithoutContractsInput, Prisma.ClientUncheckedCreateWithoutContractsInput>
   connectOrCreate?: Prisma.ClientCreateOrConnectWithoutContractsInput
@@ -503,6 +536,7 @@ export type ClientCreateWithoutUserInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   contracts?: Prisma.ContractCreateNestedManyWithoutClientInput
@@ -516,6 +550,7 @@ export type ClientUncheckedCreateWithoutUserInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   contracts?: Prisma.ContractUncheckedCreateNestedManyWithoutClientInput
@@ -558,6 +593,7 @@ export type ClientScalarWhereInput = {
   email?: Prisma.StringNullableFilter<"Client"> | string | null
   dataNascimento?: Prisma.DateTimeNullableFilter<"Client"> | Date | string | null
   endereco?: Prisma.StringFilter<"Client"> | string
+  images?: Prisma.StringNullableListFilter<"Client">
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Client"> | Date | string
   userId?: Prisma.StringFilter<"Client"> | string
@@ -571,6 +607,7 @@ export type ClientCreateWithoutContractsInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutClientsInput
@@ -584,6 +621,7 @@ export type ClientUncheckedCreateWithoutContractsInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -613,6 +651,7 @@ export type ClientUpdateWithoutContractsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutClientsNestedInput
@@ -626,6 +665,7 @@ export type ClientUncheckedUpdateWithoutContractsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -639,6 +679,7 @@ export type ClientCreateManyUserInput = {
   email?: string | null
   dataNascimento?: Date | string | null
   endereco?: string
+  images?: Prisma.ClientCreateimagesInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -651,6 +692,7 @@ export type ClientUpdateWithoutUserInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   contracts?: Prisma.ContractUpdateManyWithoutClientNestedInput
@@ -664,6 +706,7 @@ export type ClientUncheckedUpdateWithoutUserInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   contracts?: Prisma.ContractUncheckedUpdateManyWithoutClientNestedInput
@@ -677,6 +720,7 @@ export type ClientUncheckedUpdateManyWithoutUserInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataNascimento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   endereco?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.ClientUpdateimagesInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -720,6 +764,7 @@ export type ClientSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   email?: boolean
   dataNascimento?: boolean
   endereco?: boolean
+  images?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -736,6 +781,7 @@ export type ClientSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   email?: boolean
   dataNascimento?: boolean
   endereco?: boolean
+  images?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -750,6 +796,7 @@ export type ClientSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   email?: boolean
   dataNascimento?: boolean
   endereco?: boolean
+  images?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -764,12 +811,13 @@ export type ClientSelectScalar = {
   email?: boolean
   dataNascimento?: boolean
   endereco?: boolean
+  images?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
 }
 
-export type ClientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nome" | "cpf" | "telefone" | "email" | "dataNascimento" | "endereco" | "createdAt" | "updatedAt" | "userId", ExtArgs["result"]["client"]>
+export type ClientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nome" | "cpf" | "telefone" | "email" | "dataNascimento" | "endereco" | "images" | "createdAt" | "updatedAt" | "userId", ExtArgs["result"]["client"]>
 export type ClientInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   contracts?: boolean | Prisma.Client$contractsArgs<ExtArgs>
@@ -796,6 +844,7 @@ export type $ClientPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     email: string | null
     dataNascimento: Date | null
     endereco: string
+    images: string[]
     createdAt: Date
     updatedAt: Date
     userId: string
@@ -1231,6 +1280,7 @@ export interface ClientFieldRefs {
   readonly email: Prisma.FieldRef<"Client", 'String'>
   readonly dataNascimento: Prisma.FieldRef<"Client", 'DateTime'>
   readonly endereco: Prisma.FieldRef<"Client", 'String'>
+  readonly images: Prisma.FieldRef<"Client", 'String[]'>
   readonly createdAt: Prisma.FieldRef<"Client", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Client", 'DateTime'>
   readonly userId: Prisma.FieldRef<"Client", 'String'>

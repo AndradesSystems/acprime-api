@@ -20,6 +20,7 @@ enum ContractStatus {
   ATRASADO
   QUITADO
   COBRANCA_PESSOAL
+  CALOTEIRO
 }
 
 enum PaymentType {
@@ -62,6 +63,12 @@ enum UserStatus {
   AGUARDANDO_PAGAMENTO
 }
 
+enum UserPlan {
+  VAZIO
+  STARTER
+  PRO
+}
+
 // --- MODELS ---
 
 model User {
@@ -81,20 +88,21 @@ model User {
   expenses         PersonalExpense[]
   payments         PaymentHistory[]
   balanceLogs      BalanceLog[]
+  plan             UserPlan          @default(VAZIO)
 
-// Relacionamento adicionado aqui:
-  whatsappSession  WhatsappSession?
+  // Relacionamento adicionado aqui:
+  whatsappSession WhatsappSession?
 
   @@map("users")
 }
 
 model WhatsappSession {
-  id        String   @id @default(cuid())
-  pastaAuth String   @unique // Ex: "auth_user_1"
-  status    String   @default("CLOSED") // 🟢 Novo: Para controlar na tela se está OPEN, CLOSED ou CONNECTING
-  
+  id        String @id @default(cuid())
+  pastaAuth String @unique // Ex: "auth_user_1"
+  status    String @default("CLOSED") // 🟢 Novo: Para controlar na tela se está OPEN, CLOSED ou CONNECTING
+
   // 🟢 O campo mágico da Opção A: Guarda todo o cache do Baileys como texto longo no PostgreSQL
-  sessionData String?  @db.Text 
+  sessionData String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,32 +122,38 @@ model Client {
   email          String?   @unique
   dataNascimento DateTime?
   endereco       String    @default("Não informado")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contracts      Contract[]
+
+  // 🟢 NOVA COLUNA: Array de URLs do Cloudinary
+  // Importante: Em bancos já existentes, arrays criados assim iniciam vazios ([]), 
+  // o que evita erros de colunas nulas (null) para registros antigos!
+  images String[] @default([])
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contracts Contract[]
 
   @@index([userId])
   @@map("clients")
 }
 
 model Contract {
-  id             String              @id @default(cuid())
-  valorPrincipal Decimal             @db.Decimal(12, 2)
-  valorEmAberto  Decimal             @db.Decimal(12, 2)
-  taxa           Decimal             @default(0.00) @db.Decimal(12, 2)
-  jurosPercent   Decimal             @db.Decimal(5, 2)
+  id             String                @id @default(cuid())
+  valorPrincipal Decimal               @db.Decimal(12, 2)
+  valorEmAberto  Decimal               @db.Decimal(12, 2)
+  taxa           Decimal               @default(0.00) @db.Decimal(12, 2)
+  jurosPercent   Decimal               @db.Decimal(5, 2)
   vencimentoEm   DateTime
   periodicity    ContractPeriodicity
-  status         ContractStatus      @default(ABERTO)
+  status         ContractStatus        @default(ABERTO)
   historico      String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   clientId       String
-  client         Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
   userId         String
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments       PaymentHistory[]
   installments   ContractInstallment[]
 

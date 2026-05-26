@@ -22,7 +22,8 @@ export const ContractStatus = {
   ABERTO: 'ABERTO',
   ATRASADO: 'ATRASADO',
   QUITADO: 'QUITADO',
-  COBRANCA_PESSOAL: 'COBRANCA_PESSOAL'
+  COBRANCA_PESSOAL: 'COBRANCA_PESSOAL',
+  CALOTEIRO: 'CALOTEIRO'
 } as const
 
 export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus]
@@ -87,3 +88,12 @@ export const UserStatus = {
 } as const
 
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus]
+
+
+export const UserPlan = {
+  VAZIO: 'VAZIO',
+  STARTER: 'STARTER',
+  PRO: 'PRO'
+} as const
+
+export type UserPlan = (typeof UserPlan)[keyof typeof UserPlan]

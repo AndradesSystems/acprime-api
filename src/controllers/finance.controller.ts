@@ -1,7 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { FinanceService } from "../services/finance.service";
 import { type AuthPayload } from "../lib/jwt";
-import { dispararNotificacaoManual } from "../crons";
 
 export class FinanceController {
   /* =======================
@@ -209,7 +208,6 @@ export class FinanceController {
         return res.status(400).json({ error: "O ID do contrato é obrigatório para disparar a notificação." });
       }
 
-      await dispararNotificacaoManual(id);
 
       return res.status(200).json({
         message: "Notificação enviada com sucesso para o cliente.",
