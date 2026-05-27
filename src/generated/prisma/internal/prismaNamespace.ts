@@ -387,6 +387,7 @@ export const ModelName = {
   User: 'User',
   WhatsappSession: 'WhatsappSession',
   Client: 'Client',
+  ClientScore: 'ClientScore',
   Contract: 'Contract',
   ContractInstallment: 'ContractInstallment',
   PaymentHistory: 'PaymentHistory',
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "whatsappSession" | "client" | "contract" | "contractInstallment" | "paymentHistory" | "taxa" | "personalExpense" | "balanceLog"
+    modelProps: "user" | "whatsappSession" | "client" | "clientScore" | "contract" | "contractInstallment" | "paymentHistory" | "taxa" | "personalExpense" | "balanceLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -631,6 +632,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ClientCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ClientCountAggregateOutputType> | number
+        }
+      }
+    }
+    ClientScore: {
+      payload: Prisma.$ClientScorePayload<ExtArgs>
+      fields: Prisma.ClientScoreFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ClientScoreFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ClientScoreFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        findFirst: {
+          args: Prisma.ClientScoreFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ClientScoreFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        findMany: {
+          args: Prisma.ClientScoreFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>[]
+        }
+        create: {
+          args: Prisma.ClientScoreCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        createMany: {
+          args: Prisma.ClientScoreCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ClientScoreCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>[]
+        }
+        delete: {
+          args: Prisma.ClientScoreDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        update: {
+          args: Prisma.ClientScoreUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        deleteMany: {
+          args: Prisma.ClientScoreDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ClientScoreUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ClientScoreUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>[]
+        }
+        upsert: {
+          args: Prisma.ClientScoreUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientScorePayload>
+        }
+        aggregate: {
+          args: Prisma.ClientScoreAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateClientScore>
+        }
+        groupBy: {
+          args: Prisma.ClientScoreGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClientScoreGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ClientScoreCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClientScoreCountAggregateOutputType> | number
         }
       }
     }
@@ -1159,10 +1234,29 @@ export const ClientScalarFieldEnum = {
   images: 'images',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  userId: 'userId'
+  userId: 'userId',
+  score: 'score'
 } as const
 
 export type ClientScalarFieldEnum = (typeof ClientScalarFieldEnum)[keyof typeof ClientScalarFieldEnum]
+
+
+export const ClientScoreScalarFieldEnum = {
+  id: 'id',
+  valor: 'valor',
+  nivelAnalise: 'nivelAnalise',
+  totalEmprestado: 'totalEmprestado',
+  totalPago: 'totalPago',
+  retornoCapital: 'retornoCapital',
+  noPrazo: 'noPrazo',
+  atrasos: 'atrasos',
+  abertas: 'abertas',
+  motivos: 'motivos',
+  clientId: 'clientId',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ClientScoreScalarFieldEnum = (typeof ClientScoreScalarFieldEnum)[keyof typeof ClientScoreScalarFieldEnum]
 
 
 export const ContractScalarFieldEnum = {
@@ -1380,6 +1474,20 @@ export type ListEnumUserPlanFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
 
 
 /**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
  * Reference to a field of type 'ContractPeriodicity'
  */
 export type EnumContractPeriodicityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ContractPeriodicity'>
@@ -1404,20 +1512,6 @@ export type EnumContractStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'ContractStatus[]'
  */
 export type ListEnumContractStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ContractStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -1609,6 +1703,7 @@ export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   whatsappSession?: Prisma.WhatsappSessionOmit
   client?: Prisma.ClientOmit
+  clientScore?: Prisma.ClientScoreOmit
   contract?: Prisma.ContractOmit
   contractInstallment?: Prisma.ContractInstallmentOmit
   paymentHistory?: Prisma.PaymentHistoryOmit

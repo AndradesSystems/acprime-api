@@ -29,6 +29,7 @@ export class ClientService {
           endereco: data.endereco ?? "Não informado",
           userId: data.userId,
           images: data.images ?? [],
+          score: "0"
         },
       });
     } catch (error) {

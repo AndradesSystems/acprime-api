@@ -531,14 +531,6 @@ export type ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput = {
   deleteMany?: Prisma.ContractInstallmentScalarWhereInput | Prisma.ContractInstallmentScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type EnumInstallmentStatusFieldUpdateOperationsInput = {
   set?: $Enums.InstallmentStatus
 }

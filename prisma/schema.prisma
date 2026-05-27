@@ -134,8 +134,31 @@ model Client {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   contracts Contract[]
 
+  score       String?
+  clientScore ClientScore?
+
   @@index([userId])
   @@map("clients")
+}
+
+model ClientScore {
+  id              String   @id @default(cuid())
+  valor           Int // Pontuação de 0 a 1000
+  nivelAnalise    String // Ex: "Análise Consistente", "Risco Crítico", "Excelente Pagador"
+  totalEmprestado Decimal  @db.Decimal(12, 2) // Soma do valor principal de todos os contratos
+  totalPago       Decimal  @db.Decimal(12, 2) // Tudo que já foi pago (principal + juros + taxas)
+  retornoCapital  Decimal  @db.Decimal(5, 2) // % quitado do total (Ex: 84.00)
+  noPrazo         Int // Qtd de parcelas ou contratos pagos em dia
+  atrasos         Int // Qtd de parcelas ou contratos atrasados
+  abertas         Int // Qtd de parcelas/contratos pendentes e sem atraso crônico
+  motivos         String[] // Array descritivo: ["Nunca atrasou parcelas diárias (+150)", "Possui contrato como CALOTEIRO (-600)"]
+
+  clientId String @unique // Um score por cliente por varredura
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("client_scores")
 }
 
 model Contract {

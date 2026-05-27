@@ -11,6 +11,7 @@
 export type * from './models/User'
 export type * from './models/WhatsappSession'
 export type * from './models/Client'
+export type * from './models/ClientScore'
 export type * from './models/Contract'
 export type * from './models/ContractInstallment'
 export type * from './models/PaymentHistory'

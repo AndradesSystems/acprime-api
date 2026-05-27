@@ -33,6 +33,11 @@ export type WhatsappSession = Prisma.WhatsappSessionModel
  */
 export type Client = Prisma.ClientModel
 /**
+ * Model ClientScore
+ * 
+ */
+export type ClientScore = Prisma.ClientScoreModel
+/**
  * Model Contract
  * 
  */

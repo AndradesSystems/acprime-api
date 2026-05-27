@@ -228,10 +228,12 @@ export class WhatsAppService {
     }
 
     /**
-     * 3. DISPARA MENSAGEM (Sua rota POST de envio vai chamar este método)
-     */
+       * 3. DISPARA MENSAGEM (Sua rota POST de envio vai chamar este método)
+       */
     static async sendMessage(userId: string, toNumber: string, messageText: string): Promise<boolean> {
         console.log(`\n✉️ [Disparo] Tentando enviar mensagem para o número: ${toNumber}`);
+        console.log(`✉️ [Disparo] Tentando enviar mensagem para o USERID: ${userId}`);
+
         try {
             const sessao = await prisma.whatsappSession.findUnique({
                 where: { userId }
@@ -242,10 +244,22 @@ export class WhatsAppService {
             }
 
             const { pastaAuth } = sessao;
-            const clientSock = instanciasAtivas[pastaAuth];
+            let clientSock = instanciasAtivas[pastaAuth];
 
+            // 💡 RECONEXÃO AUTOMÁTICA EM TEMPO DE EXECUÇÃO:
+            // Se o banco diz que tá conectado, mas a RAM limpou, a gente liga o motor na hora!
             if (!clientSock) {
-                throw new Error('O WhatsApp deste usuário não está inicializado ou ativo na memória.');
+                console.log(`⚠️ [Memória RAM] Instância de ${userId} não encontrada na RAM. Inicializando motor de conexões...`);
+                await this.conectarWhatsApp(userId);
+
+                // Aguarda um breve instante para o socket ser atribuído à variável global
+                await new Promise((resolve) => setTimeout(resolve, 2500));
+                clientSock = instanciasAtivas[pastaAuth];
+            }
+
+            // Se mesmo tentando ligar o motor ele não subir, aí sim barramos.
+            if (!clientSock) {
+                throw new Error('O WhatsApp deste usuário não pôde ser inicializado na memória ativa.');
             }
 
             // Remove tudo o que não for número
@@ -258,7 +272,7 @@ export class WhatsAppService {
             const [resultadoValidacao] = (await clientSock.onWhatsApp(apenasNumeros)) || [];
 
             if (!resultadoValidacao || !resultadoValidacao.exists) {
-                throw new Error('Este número não possui uma conta de WhatsApp activa.');
+                throw new Error('Este número não possui uma conta de WhatsApp ativa.');
             }
 
             const jidReal = resultadoValidacao.jid;
@@ -269,7 +283,7 @@ export class WhatsAppService {
             return true;
 
         } catch (error: any) {
-            console.error(`❌ Falha no envio da mensagem:`, error.message || error);
+            console.error(`❌ Falha no envio da mensagem para o usuário ${userId}:`, error.message || error);
             throw error;
         }
     }

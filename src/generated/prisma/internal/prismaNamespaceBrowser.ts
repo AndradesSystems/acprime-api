@@ -54,6 +54,7 @@ export const ModelName = {
   User: 'User',
   WhatsappSession: 'WhatsappSession',
   Client: 'Client',
+  ClientScore: 'ClientScore',
   Contract: 'Contract',
   ContractInstallment: 'ContractInstallment',
   PaymentHistory: 'PaymentHistory',
@@ -120,10 +121,29 @@ export const ClientScalarFieldEnum = {
   images: 'images',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  userId: 'userId'
+  userId: 'userId',
+  score: 'score'
 } as const
 
 export type ClientScalarFieldEnum = (typeof ClientScalarFieldEnum)[keyof typeof ClientScalarFieldEnum]
+
+
+export const ClientScoreScalarFieldEnum = {
+  id: 'id',
+  valor: 'valor',
+  nivelAnalise: 'nivelAnalise',
+  totalEmprestado: 'totalEmprestado',
+  totalPago: 'totalPago',
+  retornoCapital: 'retornoCapital',
+  noPrazo: 'noPrazo',
+  atrasos: 'atrasos',
+  abertas: 'abertas',
+  motivos: 'motivos',
+  clientId: 'clientId',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ClientScoreScalarFieldEnum = (typeof ClientScoreScalarFieldEnum)[keyof typeof ClientScoreScalarFieldEnum]
 
 
 export const ContractScalarFieldEnum = {

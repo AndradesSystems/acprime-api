@@ -4,8 +4,8 @@ import { prisma } from "./lib/prisma";
 import { ContractService } from "./services/contract.service";
 import { WhatsAppService } from "./services/whatsapp.service";
 
-// --- CONFIGURAÇÃO DE TESTE ---
-const isTestMode = true; // Define como TRUE para ignorar a restrição de turnos fixos e testar tudo a cada 15 min
+// --- CONFIGURAÇÃO DE PRODUÇÃO ---
+const isTestMode = false; // 🔒 Em PRODUÇÃO: Mantido false para respeitar as réguas e datas corretas
 
 // --- FUNÇÃO AUXILIAR DE ESPERA (SLEEP) ---
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,7 +35,7 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
     parcelasPendentes.forEach((p: any) => {
       totalDiario += Number(p.valor);
       const pVenc = startOfDay(new Date(p.dataVencimento));
-      if (pVenc < hoje) jurosAcumulado += 5;
+      if (pVenc < hoje) jurosAcumulado += 5; // R$ 5,00 por dia de atraso
     });
 
     const valorFinal = totalDiario + jurosAcumulado;
@@ -52,9 +52,9 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
   }
 
   // ----------------------------------------------------
-  // LÓGICA: PLANO SEMANAL (WEEKLY)
+  // LÓGICA: PLANO SEMANAL (WEEKLY) - Apenas Turno da Manhã
   // ----------------------------------------------------
-  else if (contrato.periodicity === "WEEKLY" && (!turnoNoite || isTestMode)) {
+  else if (contrato.periodicity === "WEEKLY" && !turnoNoite) {
     const parcelasPendentes = contrato.installments.filter((i: any) => i.status === "PENDENTE");
     let principalSemanal = 0;
     let jurosSemanal = 0;
@@ -62,7 +62,7 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
     parcelasPendentes.forEach((p: any) => {
       principalSemanal += Number(p.valor);
       const pVenc = startOfDay(new Date(p.dataVencimento));
-      if (pVenc < hoje) jurosSemanal += 20;
+      if (pVenc < hoje) jurosSemanal += 20; // R$ 20,00 de juros por dia de atraso
     });
 
     const totalSemanal = principalSemanal + jurosSemanal;
@@ -82,9 +82,9 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
   }
 
   // ----------------------------------------------------
-  // LÓGICA: PLANO MENSAL (MONTHLY)
+  // LÓGICA: PLANO MENSAL (MONTHLY) - Apenas Turno da Manhã
   // ----------------------------------------------------
-  else if (contrato.periodicity === "MONTHLY" && (!turnoNoite || isTestMode)) {
+  else if (contrato.periodicity === "MONTHLY" && !turnoNoite) {
     const principal = Number(contrato.valorPrincipal);
     const percentualJuros = Number(contrato.jurosPercent);
     const jurosCiclo = principal * (percentualJuros / 100);
@@ -99,7 +99,7 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
           break;
         }
       }
-      taxaAtrasoProgressiva = diasEmAtraso * 20; 
+      taxaAtrasoProgressiva = diasEmAtraso * 20; // R$ 20 acumulativos por dia até o 5º dia
     }
 
     const totalMensal = principal + jurosCiclo + taxaServico + taxaAtrasoProgressiva;
@@ -118,10 +118,8 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
     }
   }
 
-  // 🛠️ FIX: Alterado de 'messageText' para 'mensagem' (variável correta)
   if (mensagem) {
     try {
-      // Passa o contrato.userId para achar a sessão correta no banco/Baileys
       await WhatsAppService.sendMessage(contrato.userId, contrato.client.telefone, mensagem);
       console.log(`✉️ [Disparo Efetuado] Enviado para ${contrato.client.nome} (${contrato.periodicity})`);
       return true;
@@ -136,23 +134,36 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
 
 // --- ENGINE DA ROTINA DE VARREDURA AUTOMÁTICA ---
 async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
-  console.log(`🚀 [Cron Notificações] Iniciando varredura de testes (Executando a cada 15 min)...`);
+  console.log(`🚀 [Cron Notificações] Iniciando varredura oficial de produção para usuários PRO...`);
   const hoje = startOfDay(new Date());
 
   try {
+    // Busca apenas os contratos ativos cujos proprietários (User) possuem plano "PRO"
     const contratos = await prisma.contract.findMany({
-      where: { status: { in: ["ABERTO", "ATRASADO"] } },
+      where: {
+        status: { in: ["ABERTO", "ATRASADO"] },
+        user: {
+          plan: "PRO"
+        }
+      },
       include: { client: true, installments: true },
     });
 
-    console.log(`📋 Total de contratos encontrados nesta execução de teste: ${contratos.length}`);
+    console.log(`📋 Total de contratos de usuários PRO mapeados: ${contratos.length}`);
 
     for (const contrato of contratos) {
+      if (!contrato.client?.telefone) {
+        console.log(`⏩ [Ignorado] Cliente ${contrato.client?.nome || 'Sem Nome'} sem telefone válido.`);
+        continue;
+      }
+
       const vencimento = startOfDay(new Date(contrato.vencimentoEm));
       let deveNotificar = false;
       let isAtrasado = false;
 
-      if (isAfternoonRun && !isTestMode) {
+      if (isAfternoonRun) {
+        // --- REGRA DO TURNO DA NOITE (19:00h) ---
+        // Exclusivo para planos DIÁRIOS (Vence hoje ou até 3 dias atrasado)
         if (contrato.periodicity === "DAILY") {
           const janelasDiasDiario = [0, -1, -2, -3];
           deveNotificar = janelasDiasDiario.some((d) => isSameDay(hoje, addDays(vencimento, -d)));
@@ -161,17 +172,21 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
           if (deveNotificar) {
             const enviou = await processarEnvioMensagem(contrato, isAtrasado, true);
             if (enviou) {
-              const delayRandomico = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
+              const delayRandomico = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000; // 5s a 15s
               await sleep(delayRandomico);
             }
           }
         }
       } else {
+        // --- REGRA DO TURNO DA MANHÃ (08:00h) ---
+        
+        // 1. Lógica Diária (Hoje + até 3 dias de atraso)
         if (contrato.periodicity === "DAILY") {
           const dias = [0, -1, -2, -3];
           deveNotificar = dias.some((d) => isSameDay(hoje, addDays(vencimento, -d)));
           if (deveNotificar && !isSameDay(hoje, vencimento)) isAtrasado = true;
         } 
+        // 2. Lógica Semanal (Hoje + até 3 dias de atraso)
         else if (contrato.periodicity === "WEEKLY") {
           if (isSameDay(hoje, vencimento)) {
             deveNotificar = true;
@@ -181,6 +196,7 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
             if (deveNotificar) isAtrasado = true;
           }
         } 
+        // 3. Lógica Mensal (Hoje + até 5 dias de atraso)
         else if (contrato.periodicity === "MONTHLY") {
           if (isSameDay(hoje, vencimento)) {
             deveNotificar = true;
@@ -191,6 +207,7 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
           }
         }
 
+        // Execução do envio matutino com atualização de status
         if (deveNotificar) {
           if (isAtrasado && contrato.status !== "ATRASADO") {
             await prisma.contract.update({
@@ -202,8 +219,8 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
           const enviou = await processarEnvioMensagem(contrato, isAtrasado, false);
           
           if (enviou) {
-            const delayRandomico = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000;
-            console.log(`⏳ [Anti-Bloqueio] Aguardando ${delayRandomico / 1000}s para o próximo item...`);
+            const delayRandomico = Math.floor(Math.random() * (15000 - 5000 + 1)) + 5000; // 5s a 15s de proteção humana
+            console.log(`⏳ [Anti-Bloqueio] Aguardando ${delayRandomico / 1000}s para o próximo item da fila...`);
             await sleep(delayRandomico);
           }
         }
@@ -216,12 +233,17 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
 
 // --- ATUALIZAÇÃO RECORRENTE DE TAXAS ---
 async function runGlobalTaxUpdate() {
-  console.log("💰 [Cron Taxas] Aplicando taxas pendentes globais...");
+  console.log("💰 [Cron Taxas] Aplicando taxas pendentes globais para usuários PRO...");
   try {
-    const users = await prisma.user.findMany({ select: { id: true } });
+    const users = await prisma.user.findMany({
+      where: { plan: "PRO" },
+      select: { id: true }
+    });
+
     for (const user of users) {
       await ContractService.applyPendingTaxes(user.id);
     }
+    console.log(`✅ [Cron Taxas] Taxas atualizadas com sucesso para ${users.length} usuários PRO.`);
   } catch (error) {
     console.error("❌ [Cron Taxas] Erro ao atualizar:", error);
   }
@@ -231,23 +253,26 @@ async function runGlobalTaxUpdate() {
 export const initCronJobs = () => {
   const TIMEZONE = "America/Sao_Paulo";
 
-  // =========================================================================
-  // COMENTADO: AGENDAMENTOS DE HORÁRIOS FIXOS ANTERIORES (PRODUÇÃO)
-  // =========================================================================
-  // cron.schedule("0 8 * * *", () => checkAndNotifyContracts(false), { timezone: TIMEZONE });
-  // cron.schedule("0 19 * * *", () => checkAndNotifyContracts(true), { timezone: TIMEZONE });
-  // =========================================================================
-
-  // 🔥 AGENDAMENTO DE TESTES: Dispara de 15 em 15 minutos de forma contínua
-  cron.schedule("*/15 * * * *", () => {
+  // 🕒 1. Turno da Manhã: Executa exatamente às 08:00h todos os dias (Envia todos os planos)
+  cron.schedule("0 8 * * *", () => {
     checkAndNotifyContracts(false);
   }, {
     timezone: TIMEZONE,
   });
 
-  cron.schedule("55 7 * * *", () => runGlobalTaxUpdate(), {
+  // 🕒 2. Turno da Noite: Executa exatamente às 19:00h todos os dias (Exclusivo reforço Diário)
+  cron.schedule("0 19 * * *", () => {
+    checkAndNotifyContracts(true);
+  }, {
     timezone: TIMEZONE,
   });
 
-  console.log(`🤖 Modo de Testes Ativo: Automações agendadas de 15 em 15 minutos.`);
+  // 💰 3. Engine de Taxas: Executa às 07:55h (Calcula saldos 5 minutos antes dos disparos da manhã)
+  cron.schedule("55 7 * * *", () => {
+    runGlobalTaxUpdate();
+  }, {
+    timezone: TIMEZONE,
+  });
+
+  console.log(`🚀 [PRODUÇÃO] Robô Andrade ativo nos horários combinados (08h e 19h) com filtros PRO habilitados.`);
 };

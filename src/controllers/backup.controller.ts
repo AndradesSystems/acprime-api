@@ -1,29 +1,40 @@
-import { type Request, type Response } from "express";
-import { BackupService } from "../services/backup.service";
+import { type Request, type Response, type NextFunction } from "express";
+import { BackupService, type ExportType } from "../services/backup.service";
+import { type AuthPayload } from "../lib/jwt";
 
 export class BackupController {
-  static async download(req: Request, res: Response) {
+  /**
+   * 💾 EXPORTAR DADOS
+   */
+  static async export(req: Request, res: Response, next: NextFunction, auth: AuthPayload) {
     try {
-      const backup = await BackupService.exportAllData();
-      res.setHeader("Content-Disposition", "attachment; filename=backup.json");
+      const type = (req.query.type as ExportType) || "TOTAL";
+      const dataSnapshot = await BackupService.exportDataByUser(auth.sub, type);
+
+      res.setHeader("Content-Disposition", `attachment; filename=backup-${type.toLowerCase()}.json`);
       res.setHeader("Content-Type", "application/json");
-      return res.status(200).send(JSON.stringify(backup, null, 2));
-    } catch (error: any) {
-      return res.status(500).json({ error: "Erro ao exportar: " + error.message });
+
+      return res.json(dataSnapshot);
+    } catch (e) {
+      return next(e);
     }
   }
 
-  static async restore(req: Request, res: Response) {
+  /**
+   * 📥 IMPORTAR DADOS
+   */
+  static async import(req: Request, res: Response, next: NextFunction, _auth: AuthPayload) {
     try {
       const backupData = req.body;
+
       if (!backupData || !backupData.tables) {
-        return res.status(400).json({ error: "Arquivo de backup inválido ou vazio." });
+        return res.status(400).json({ error: "Arquivo de backup inválido." });
       }
-      await BackupService.importAllData(backupData);
-      return res.status(200).json({ message: "Dados restaurados com sucesso!" });
-    } catch (error: any) {
-      console.error("Erro no Restore:", error);
-      return res.status(500).json({ error: "Falha na restauração: " + error.message });
+
+      const result = await BackupService.importAllData(backupData);
+      return res.status(200).json(result);
+    } catch (e) {
+      return next(e);
     }
   }
 }
