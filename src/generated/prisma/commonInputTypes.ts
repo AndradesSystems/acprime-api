@@ -254,6 +254,11 @@ export type EnumContractStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumContractStatusFilter<$PrismaModel> | $Enums.ContractStatus
 }
 
+export type BoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
 export type EnumContractPeriodicityWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.ContractPeriodicity | Prisma.EnumContractPeriodicityFieldRefInput<$PrismaModel>
   in?: $Enums.ContractPeriodicity[] | Prisma.ListEnumContractPeriodicityFieldRefInput<$PrismaModel>
@@ -272,6 +277,48 @@ export type EnumContractStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumContractStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumContractStatusFilter<$PrismaModel>
+}
+
+export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
+export type EnumNegotiationTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationType | Prisma.EnumNegotiationTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel> | $Enums.NegotiationType
+}
+
+export type EnumNegotiationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationStatus | Prisma.EnumNegotiationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel> | $Enums.NegotiationStatus
+}
+
+export type EnumNegotiationTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationType | Prisma.EnumNegotiationTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationTypeWithAggregatesFilter<$PrismaModel> | $Enums.NegotiationType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel>
+}
+
+export type EnumNegotiationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationStatus | Prisma.EnumNegotiationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationStatusWithAggregatesFilter<$PrismaModel> | $Enums.NegotiationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel>
 }
 
 export type EnumInstallmentStatusFilter<$PrismaModel = never> = {
@@ -322,11 +369,6 @@ export type EnumTransactionFlowFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel> | $Enums.TransactionFlow
 }
 
-export type BoolFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
-}
-
 export type EnumTransactionStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.TransactionStatus | Prisma.EnumTransactionStatusFieldRefInput<$PrismaModel>
   in?: $Enums.TransactionStatus[] | Prisma.ListEnumTransactionStatusFieldRefInput<$PrismaModel>
@@ -363,14 +405,6 @@ export type EnumTransactionFlowWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel>
   _max?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel>
-}
-
-export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedBoolFilter<$PrismaModel>
-  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 export type EnumTransactionStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -652,6 +686,11 @@ export type NestedEnumContractStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumContractStatusFilter<$PrismaModel> | $Enums.ContractStatus
 }
 
+export type NestedBoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
 export type NestedEnumContractPeriodicityWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.ContractPeriodicity | Prisma.EnumContractPeriodicityFieldRefInput<$PrismaModel>
   in?: $Enums.ContractPeriodicity[] | Prisma.ListEnumContractPeriodicityFieldRefInput<$PrismaModel>
@@ -670,6 +709,48 @@ export type NestedEnumContractStatusWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumContractStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumContractStatusFilter<$PrismaModel>
+}
+
+export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
+export type NestedEnumNegotiationTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationType | Prisma.EnumNegotiationTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel> | $Enums.NegotiationType
+}
+
+export type NestedEnumNegotiationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationStatus | Prisma.EnumNegotiationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel> | $Enums.NegotiationStatus
+}
+
+export type NestedEnumNegotiationTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationType | Prisma.EnumNegotiationTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationType[] | Prisma.ListEnumNegotiationTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationTypeWithAggregatesFilter<$PrismaModel> | $Enums.NegotiationType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNegotiationTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumNegotiationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NegotiationStatus | Prisma.EnumNegotiationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NegotiationStatus[] | Prisma.ListEnumNegotiationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNegotiationStatusWithAggregatesFilter<$PrismaModel> | $Enums.NegotiationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNegotiationStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumInstallmentStatusFilter<$PrismaModel = never> = {
@@ -720,11 +801,6 @@ export type NestedEnumTransactionFlowFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel> | $Enums.TransactionFlow
 }
 
-export type NestedBoolFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
-}
-
 export type NestedEnumTransactionStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.TransactionStatus | Prisma.EnumTransactionStatusFieldRefInput<$PrismaModel>
   in?: $Enums.TransactionStatus[] | Prisma.ListEnumTransactionStatusFieldRefInput<$PrismaModel>
@@ -750,14 +826,6 @@ export type NestedEnumTransactionFlowWithAggregatesFilter<$PrismaModel = never> 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel>
   _max?: Prisma.NestedEnumTransactionFlowFilter<$PrismaModel>
-}
-
-export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedBoolFilter<$PrismaModel>
-  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 export type NestedEnumTransactionStatusWithAggregatesFilter<$PrismaModel = never> = {

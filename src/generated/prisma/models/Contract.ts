@@ -54,6 +54,7 @@ export type ContractMinAggregateOutputType = {
   updatedAt: Date | null
   clientId: string | null
   userId: string | null
+  onNegotiation: boolean | null
 }
 
 export type ContractMaxAggregateOutputType = {
@@ -70,6 +71,7 @@ export type ContractMaxAggregateOutputType = {
   updatedAt: Date | null
   clientId: string | null
   userId: string | null
+  onNegotiation: boolean | null
 }
 
 export type ContractCountAggregateOutputType = {
@@ -86,6 +88,7 @@ export type ContractCountAggregateOutputType = {
   updatedAt: number
   clientId: number
   userId: number
+  onNegotiation: number
   _all: number
 }
 
@@ -118,6 +121,7 @@ export type ContractMinAggregateInputType = {
   updatedAt?: true
   clientId?: true
   userId?: true
+  onNegotiation?: true
 }
 
 export type ContractMaxAggregateInputType = {
@@ -134,6 +138,7 @@ export type ContractMaxAggregateInputType = {
   updatedAt?: true
   clientId?: true
   userId?: true
+  onNegotiation?: true
 }
 
 export type ContractCountAggregateInputType = {
@@ -150,6 +155,7 @@ export type ContractCountAggregateInputType = {
   updatedAt?: true
   clientId?: true
   userId?: true
+  onNegotiation?: true
   _all?: true
 }
 
@@ -253,6 +259,7 @@ export type ContractGroupByOutputType = {
   updatedAt: Date
   clientId: string
   userId: string
+  onNegotiation: boolean
   _count: ContractCountAggregateOutputType | null
   _avg: ContractAvgAggregateOutputType | null
   _sum: ContractSumAggregateOutputType | null
@@ -292,10 +299,12 @@ export type ContractWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Contract"> | Date | string
   clientId?: Prisma.StringFilter<"Contract"> | string
   userId?: Prisma.StringFilter<"Contract"> | string
+  onNegotiation?: Prisma.BoolFilter<"Contract"> | boolean
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   payments?: Prisma.PaymentHistoryListRelationFilter
   installments?: Prisma.ContractInstallmentListRelationFilter
+  negotiations?: Prisma.NegotiationListRelationFilter
 }
 
 export type ContractOrderByWithRelationInput = {
@@ -312,10 +321,12 @@ export type ContractOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  onNegotiation?: Prisma.SortOrder
   client?: Prisma.ClientOrderByWithRelationInput
   user?: Prisma.UserOrderByWithRelationInput
   payments?: Prisma.PaymentHistoryOrderByRelationAggregateInput
   installments?: Prisma.ContractInstallmentOrderByRelationAggregateInput
+  negotiations?: Prisma.NegotiationOrderByRelationAggregateInput
 }
 
 export type ContractWhereUniqueInput = Prisma.AtLeast<{
@@ -335,10 +346,12 @@ export type ContractWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Contract"> | Date | string
   clientId?: Prisma.StringFilter<"Contract"> | string
   userId?: Prisma.StringFilter<"Contract"> | string
+  onNegotiation?: Prisma.BoolFilter<"Contract"> | boolean
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   payments?: Prisma.PaymentHistoryListRelationFilter
   installments?: Prisma.ContractInstallmentListRelationFilter
+  negotiations?: Prisma.NegotiationListRelationFilter
 }, "id">
 
 export type ContractOrderByWithAggregationInput = {
@@ -355,6 +368,7 @@ export type ContractOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  onNegotiation?: Prisma.SortOrder
   _count?: Prisma.ContractCountOrderByAggregateInput
   _avg?: Prisma.ContractAvgOrderByAggregateInput
   _max?: Prisma.ContractMaxOrderByAggregateInput
@@ -379,6 +393,7 @@ export type ContractScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Contract"> | Date | string
   clientId?: Prisma.StringWithAggregatesFilter<"Contract"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Contract"> | string
+  onNegotiation?: Prisma.BoolWithAggregatesFilter<"Contract"> | boolean
 }
 
 export type ContractCreateInput = {
@@ -393,10 +408,12 @@ export type ContractCreateInput = {
   historico?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  onNegotiation?: boolean
   client: Prisma.ClientCreateNestedOneWithoutContractsInput
   user: Prisma.UserCreateNestedOneWithoutContractsInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationCreateNestedManyWithoutContractInput
 }
 
 export type ContractUncheckedCreateInput = {
@@ -413,8 +430,10 @@ export type ContractUncheckedCreateInput = {
   updatedAt?: Date | string
   clientId: string
   userId: string
+  onNegotiation?: boolean
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentUncheckedCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationUncheckedCreateNestedManyWithoutContractInput
 }
 
 export type ContractUpdateInput = {
@@ -429,10 +448,12 @@ export type ContractUpdateInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   client?: Prisma.ClientUpdateOneRequiredWithoutContractsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutContractsNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateInput = {
@@ -449,8 +470,10 @@ export type ContractUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUncheckedUpdateManyWithoutContractNestedInput
 }
 
 export type ContractCreateManyInput = {
@@ -467,6 +490,7 @@ export type ContractCreateManyInput = {
   updatedAt?: Date | string
   clientId: string
   userId: string
+  onNegotiation?: boolean
 }
 
 export type ContractUpdateManyMutationInput = {
@@ -481,6 +505,7 @@ export type ContractUpdateManyMutationInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ContractUncheckedUpdateManyInput = {
@@ -497,6 +522,7 @@ export type ContractUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ContractListRelationFilter = {
@@ -523,6 +549,7 @@ export type ContractCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  onNegotiation?: Prisma.SortOrder
 }
 
 export type ContractAvgOrderByAggregateInput = {
@@ -546,6 +573,7 @@ export type ContractMaxOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  onNegotiation?: Prisma.SortOrder
 }
 
 export type ContractMinOrderByAggregateInput = {
@@ -562,6 +590,7 @@ export type ContractMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  onNegotiation?: Prisma.SortOrder
 }
 
 export type ContractSumOrderByAggregateInput = {
@@ -668,6 +697,24 @@ export type EnumContractStatusFieldUpdateOperationsInput = {
   set?: $Enums.ContractStatus
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type ContractCreateNestedOneWithoutNegotiationsInput = {
+  create?: Prisma.XOR<Prisma.ContractCreateWithoutNegotiationsInput, Prisma.ContractUncheckedCreateWithoutNegotiationsInput>
+  connectOrCreate?: Prisma.ContractCreateOrConnectWithoutNegotiationsInput
+  connect?: Prisma.ContractWhereUniqueInput
+}
+
+export type ContractUpdateOneRequiredWithoutNegotiationsNestedInput = {
+  create?: Prisma.XOR<Prisma.ContractCreateWithoutNegotiationsInput, Prisma.ContractUncheckedCreateWithoutNegotiationsInput>
+  connectOrCreate?: Prisma.ContractCreateOrConnectWithoutNegotiationsInput
+  upsert?: Prisma.ContractUpsertWithoutNegotiationsInput
+  connect?: Prisma.ContractWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ContractUpdateToOneWithWhereWithoutNegotiationsInput, Prisma.ContractUpdateWithoutNegotiationsInput>, Prisma.ContractUncheckedUpdateWithoutNegotiationsInput>
+}
+
 export type ContractCreateNestedOneWithoutInstallmentsInput = {
   create?: Prisma.XOR<Prisma.ContractCreateWithoutInstallmentsInput, Prisma.ContractUncheckedCreateWithoutInstallmentsInput>
   connectOrCreate?: Prisma.ContractCreateOrConnectWithoutInstallmentsInput
@@ -708,9 +755,11 @@ export type ContractCreateWithoutUserInput = {
   historico?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  onNegotiation?: boolean
   client: Prisma.ClientCreateNestedOneWithoutContractsInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationCreateNestedManyWithoutContractInput
 }
 
 export type ContractUncheckedCreateWithoutUserInput = {
@@ -726,8 +775,10 @@ export type ContractUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   clientId: string
+  onNegotiation?: boolean
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentUncheckedCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationUncheckedCreateNestedManyWithoutContractInput
 }
 
 export type ContractCreateOrConnectWithoutUserInput = {
@@ -773,6 +824,7 @@ export type ContractScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Contract"> | Date | string
   clientId?: Prisma.StringFilter<"Contract"> | string
   userId?: Prisma.StringFilter<"Contract"> | string
+  onNegotiation?: Prisma.BoolFilter<"Contract"> | boolean
 }
 
 export type ContractCreateWithoutClientInput = {
@@ -787,9 +839,11 @@ export type ContractCreateWithoutClientInput = {
   historico?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  onNegotiation?: boolean
   user: Prisma.UserCreateNestedOneWithoutContractsInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationCreateNestedManyWithoutContractInput
 }
 
 export type ContractUncheckedCreateWithoutClientInput = {
@@ -805,8 +859,10 @@ export type ContractUncheckedCreateWithoutClientInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  onNegotiation?: boolean
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutContractInput
   installments?: Prisma.ContractInstallmentUncheckedCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationUncheckedCreateNestedManyWithoutContractInput
 }
 
 export type ContractCreateOrConnectWithoutClientInput = {
@@ -835,6 +891,98 @@ export type ContractUpdateManyWithWhereWithoutClientInput = {
   data: Prisma.XOR<Prisma.ContractUpdateManyMutationInput, Prisma.ContractUncheckedUpdateManyWithoutClientInput>
 }
 
+export type ContractCreateWithoutNegotiationsInput = {
+  id?: string
+  valorPrincipal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  valorEmAberto: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxa?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  jurosPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimentoEm: Date | string
+  periodicity: $Enums.ContractPeriodicity
+  status?: $Enums.ContractStatus
+  historico?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  onNegotiation?: boolean
+  client: Prisma.ClientCreateNestedOneWithoutContractsInput
+  user: Prisma.UserCreateNestedOneWithoutContractsInput
+  payments?: Prisma.PaymentHistoryCreateNestedManyWithoutContractInput
+  installments?: Prisma.ContractInstallmentCreateNestedManyWithoutContractInput
+}
+
+export type ContractUncheckedCreateWithoutNegotiationsInput = {
+  id?: string
+  valorPrincipal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  valorEmAberto: runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxa?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  jurosPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimentoEm: Date | string
+  periodicity: $Enums.ContractPeriodicity
+  status?: $Enums.ContractStatus
+  historico?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clientId: string
+  userId: string
+  onNegotiation?: boolean
+  payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutContractInput
+  installments?: Prisma.ContractInstallmentUncheckedCreateNestedManyWithoutContractInput
+}
+
+export type ContractCreateOrConnectWithoutNegotiationsInput = {
+  where: Prisma.ContractWhereUniqueInput
+  create: Prisma.XOR<Prisma.ContractCreateWithoutNegotiationsInput, Prisma.ContractUncheckedCreateWithoutNegotiationsInput>
+}
+
+export type ContractUpsertWithoutNegotiationsInput = {
+  update: Prisma.XOR<Prisma.ContractUpdateWithoutNegotiationsInput, Prisma.ContractUncheckedUpdateWithoutNegotiationsInput>
+  create: Prisma.XOR<Prisma.ContractCreateWithoutNegotiationsInput, Prisma.ContractUncheckedCreateWithoutNegotiationsInput>
+  where?: Prisma.ContractWhereInput
+}
+
+export type ContractUpdateToOneWithWhereWithoutNegotiationsInput = {
+  where?: Prisma.ContractWhereInput
+  data: Prisma.XOR<Prisma.ContractUpdateWithoutNegotiationsInput, Prisma.ContractUncheckedUpdateWithoutNegotiationsInput>
+}
+
+export type ContractUpdateWithoutNegotiationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  valorPrincipal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  valorEmAberto?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxa?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  jurosPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimentoEm?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  periodicity?: Prisma.EnumContractPeriodicityFieldUpdateOperationsInput | $Enums.ContractPeriodicity
+  status?: Prisma.EnumContractStatusFieldUpdateOperationsInput | $Enums.ContractStatus
+  historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  client?: Prisma.ClientUpdateOneRequiredWithoutContractsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutContractsNestedInput
+  payments?: Prisma.PaymentHistoryUpdateManyWithoutContractNestedInput
+  installments?: Prisma.ContractInstallmentUpdateManyWithoutContractNestedInput
+}
+
+export type ContractUncheckedUpdateWithoutNegotiationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  valorPrincipal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  valorEmAberto?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  taxa?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  jurosPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vencimentoEm?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  periodicity?: Prisma.EnumContractPeriodicityFieldUpdateOperationsInput | $Enums.ContractPeriodicity
+  status?: Prisma.EnumContractStatusFieldUpdateOperationsInput | $Enums.ContractStatus
+  historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutContractNestedInput
+  installments?: Prisma.ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput
+}
+
 export type ContractCreateWithoutInstallmentsInput = {
   id?: string
   valorPrincipal: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -847,9 +995,11 @@ export type ContractCreateWithoutInstallmentsInput = {
   historico?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  onNegotiation?: boolean
   client: Prisma.ClientCreateNestedOneWithoutContractsInput
   user: Prisma.UserCreateNestedOneWithoutContractsInput
   payments?: Prisma.PaymentHistoryCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationCreateNestedManyWithoutContractInput
 }
 
 export type ContractUncheckedCreateWithoutInstallmentsInput = {
@@ -866,7 +1016,9 @@ export type ContractUncheckedCreateWithoutInstallmentsInput = {
   updatedAt?: Date | string
   clientId: string
   userId: string
+  onNegotiation?: boolean
   payments?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationUncheckedCreateNestedManyWithoutContractInput
 }
 
 export type ContractCreateOrConnectWithoutInstallmentsInput = {
@@ -897,9 +1049,11 @@ export type ContractUpdateWithoutInstallmentsInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   client?: Prisma.ClientUpdateOneRequiredWithoutContractsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutContractsNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateWithoutInstallmentsInput = {
@@ -916,7 +1070,9 @@ export type ContractUncheckedUpdateWithoutInstallmentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUncheckedUpdateManyWithoutContractNestedInput
 }
 
 export type ContractCreateWithoutPaymentsInput = {
@@ -931,9 +1087,11 @@ export type ContractCreateWithoutPaymentsInput = {
   historico?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  onNegotiation?: boolean
   client: Prisma.ClientCreateNestedOneWithoutContractsInput
   user: Prisma.UserCreateNestedOneWithoutContractsInput
   installments?: Prisma.ContractInstallmentCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationCreateNestedManyWithoutContractInput
 }
 
 export type ContractUncheckedCreateWithoutPaymentsInput = {
@@ -950,7 +1108,9 @@ export type ContractUncheckedCreateWithoutPaymentsInput = {
   updatedAt?: Date | string
   clientId: string
   userId: string
+  onNegotiation?: boolean
   installments?: Prisma.ContractInstallmentUncheckedCreateNestedManyWithoutContractInput
+  negotiations?: Prisma.NegotiationUncheckedCreateNestedManyWithoutContractInput
 }
 
 export type ContractCreateOrConnectWithoutPaymentsInput = {
@@ -981,9 +1141,11 @@ export type ContractUpdateWithoutPaymentsInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   client?: Prisma.ClientUpdateOneRequiredWithoutContractsNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutContractsNestedInput
   installments?: Prisma.ContractInstallmentUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateWithoutPaymentsInput = {
@@ -1000,7 +1162,9 @@ export type ContractUncheckedUpdateWithoutPaymentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   installments?: Prisma.ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUncheckedUpdateManyWithoutContractNestedInput
 }
 
 export type ContractCreateManyUserInput = {
@@ -1016,6 +1180,7 @@ export type ContractCreateManyUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   clientId: string
+  onNegotiation?: boolean
 }
 
 export type ContractUpdateWithoutUserInput = {
@@ -1030,9 +1195,11 @@ export type ContractUpdateWithoutUserInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   client?: Prisma.ClientUpdateOneRequiredWithoutContractsNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateWithoutUserInput = {
@@ -1048,8 +1215,10 @@ export type ContractUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUncheckedUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateManyWithoutUserInput = {
@@ -1065,6 +1234,7 @@ export type ContractUncheckedUpdateManyWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ContractCreateManyClientInput = {
@@ -1080,6 +1250,7 @@ export type ContractCreateManyClientInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
+  onNegotiation?: boolean
 }
 
 export type ContractUpdateWithoutClientInput = {
@@ -1094,9 +1265,11 @@ export type ContractUpdateWithoutClientInput = {
   historico?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user?: Prisma.UserUpdateOneRequiredWithoutContractsNestedInput
   payments?: Prisma.PaymentHistoryUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateWithoutClientInput = {
@@ -1112,8 +1285,10 @@ export type ContractUncheckedUpdateWithoutClientInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   payments?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutContractNestedInput
   installments?: Prisma.ContractInstallmentUncheckedUpdateManyWithoutContractNestedInput
+  negotiations?: Prisma.NegotiationUncheckedUpdateManyWithoutContractNestedInput
 }
 
 export type ContractUncheckedUpdateManyWithoutClientInput = {
@@ -1129,6 +1304,7 @@ export type ContractUncheckedUpdateManyWithoutClientInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  onNegotiation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -1139,11 +1315,13 @@ export type ContractUncheckedUpdateManyWithoutClientInput = {
 export type ContractCountOutputType = {
   payments: number
   installments: number
+  negotiations: number
 }
 
 export type ContractCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   payments?: boolean | ContractCountOutputTypeCountPaymentsArgs
   installments?: boolean | ContractCountOutputTypeCountInstallmentsArgs
+  negotiations?: boolean | ContractCountOutputTypeCountNegotiationsArgs
 }
 
 /**
@@ -1170,6 +1348,13 @@ export type ContractCountOutputTypeCountInstallmentsArgs<ExtArgs extends runtime
   where?: Prisma.ContractInstallmentWhereInput
 }
 
+/**
+ * ContractCountOutputType without action
+ */
+export type ContractCountOutputTypeCountNegotiationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NegotiationWhereInput
+}
+
 
 export type ContractSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1185,10 +1370,12 @@ export type ContractSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updatedAt?: boolean
   clientId?: boolean
   userId?: boolean
+  onNegotiation?: boolean
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   payments?: boolean | Prisma.Contract$paymentsArgs<ExtArgs>
   installments?: boolean | Prisma.Contract$installmentsArgs<ExtArgs>
+  negotiations?: boolean | Prisma.Contract$negotiationsArgs<ExtArgs>
   _count?: boolean | Prisma.ContractCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["contract"]>
 
@@ -1206,6 +1393,7 @@ export type ContractSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   updatedAt?: boolean
   clientId?: boolean
   userId?: boolean
+  onNegotiation?: boolean
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["contract"]>
@@ -1224,6 +1412,7 @@ export type ContractSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   updatedAt?: boolean
   clientId?: boolean
   userId?: boolean
+  onNegotiation?: boolean
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["contract"]>
@@ -1242,14 +1431,16 @@ export type ContractSelectScalar = {
   updatedAt?: boolean
   clientId?: boolean
   userId?: boolean
+  onNegotiation?: boolean
 }
 
-export type ContractOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "valorPrincipal" | "valorEmAberto" | "taxa" | "jurosPercent" | "vencimentoEm" | "periodicity" | "status" | "historico" | "createdAt" | "updatedAt" | "clientId" | "userId", ExtArgs["result"]["contract"]>
+export type ContractOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "valorPrincipal" | "valorEmAberto" | "taxa" | "jurosPercent" | "vencimentoEm" | "periodicity" | "status" | "historico" | "createdAt" | "updatedAt" | "clientId" | "userId" | "onNegotiation", ExtArgs["result"]["contract"]>
 export type ContractInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   payments?: boolean | Prisma.Contract$paymentsArgs<ExtArgs>
   installments?: boolean | Prisma.Contract$installmentsArgs<ExtArgs>
+  negotiations?: boolean | Prisma.Contract$negotiationsArgs<ExtArgs>
   _count?: boolean | Prisma.ContractCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ContractIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1268,6 +1459,7 @@ export type $ContractPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     user: Prisma.$UserPayload<ExtArgs>
     payments: Prisma.$PaymentHistoryPayload<ExtArgs>[]
     installments: Prisma.$ContractInstallmentPayload<ExtArgs>[]
+    negotiations: Prisma.$NegotiationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1283,6 +1475,7 @@ export type $ContractPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     updatedAt: Date
     clientId: string
     userId: string
+    onNegotiation: boolean
   }, ExtArgs["result"]["contract"]>
   composites: {}
 }
@@ -1681,6 +1874,7 @@ export interface Prisma__ContractClient<T, Null = never, ExtArgs extends runtime
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   payments<T extends Prisma.Contract$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Contract$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   installments<T extends Prisma.Contract$installmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Contract$installmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ContractInstallmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  negotiations<T extends Prisma.Contract$negotiationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Contract$negotiationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NegotiationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1723,6 +1917,7 @@ export interface ContractFieldRefs {
   readonly updatedAt: Prisma.FieldRef<"Contract", 'DateTime'>
   readonly clientId: Prisma.FieldRef<"Contract", 'String'>
   readonly userId: Prisma.FieldRef<"Contract", 'String'>
+  readonly onNegotiation: Prisma.FieldRef<"Contract", 'Boolean'>
 }
     
 
@@ -2169,6 +2364,30 @@ export type Contract$installmentsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.ContractInstallmentScalarFieldEnum | Prisma.ContractInstallmentScalarFieldEnum[]
+}
+
+/**
+ * Contract.negotiations
+ */
+export type Contract$negotiationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Negotiation
+   */
+  select?: Prisma.NegotiationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Negotiation
+   */
+  omit?: Prisma.NegotiationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NegotiationInclude<ExtArgs> | null
+  where?: Prisma.NegotiationWhereInput
+  orderBy?: Prisma.NegotiationOrderByWithRelationInput | Prisma.NegotiationOrderByWithRelationInput[]
+  cursor?: Prisma.NegotiationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NegotiationScalarFieldEnum | Prisma.NegotiationScalarFieldEnum[]
 }
 
 /**

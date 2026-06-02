@@ -23,7 +23,8 @@ export const ContractStatus = {
   ATRASADO: 'ATRASADO',
   QUITADO: 'QUITADO',
   COBRANCA_PESSOAL: 'COBRANCA_PESSOAL',
-  CALOTEIRO: 'CALOTEIRO'
+  CALOTEIRO: 'CALOTEIRO',
+  NEGOCIADO: 'NEGOCIADO'
 } as const
 
 export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus]
@@ -97,3 +98,20 @@ export const UserPlan = {
 } as const
 
 export type UserPlan = (typeof UserPlan)[keyof typeof UserPlan]
+
+
+export const NegotiationType = {
+  A_VISTA: 'A_VISTA',
+  PARCELADO: 'PARCELADO'
+} as const
+
+export type NegotiationType = (typeof NegotiationType)[keyof typeof NegotiationType]
+
+
+export const NegotiationStatus = {
+  PENDENTE: 'PENDENTE',
+  PAGO: 'PAGO',
+  QUEBRADO: 'QUEBRADO'
+} as const
+
+export type NegotiationStatus = (typeof NegotiationStatus)[keyof typeof NegotiationStatus]

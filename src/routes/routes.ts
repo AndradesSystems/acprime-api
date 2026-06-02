@@ -10,8 +10,9 @@ import clientRoutes from "./client.routes";
 import contractRoutes from "./contract.routes";
 import paymentRoutes from "./payment.routes";
 import { financeRoutes } from "./finance.routes";
-import { whatsappRoutes } from "./whatsapp.routes"; // Importando as novas rotas do WhatsApp
-import { withAdmin } from "../middlewares/auth.wrapper";
+import { whatsappRoutes } from "./whatsapp.routes";
+import { negotiationRoutes } from "./negotiation.routes";
+
 import taxaRoutes from "./taxa.routes";
 import scoreRoutes from './score.routes'
 
@@ -31,6 +32,8 @@ router.use("/contract", contractRoutes);
 router.use("/taxas", taxaRoutes);
 router.use("/payment", paymentRoutes);
 router.use("/whatsapp", whatsappRoutes);
+router.use("/negotiation", negotiationRoutes);
+
 
 
 export default router;

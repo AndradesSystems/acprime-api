@@ -56,6 +56,8 @@ export const ModelName = {
   Client: 'Client',
   ClientScore: 'ClientScore',
   Contract: 'Contract',
+  Negotiation: 'Negotiation',
+  NegotiationInstallment: 'NegotiationInstallment',
   ContractInstallment: 'ContractInstallment',
   PaymentHistory: 'PaymentHistory',
   Taxa: 'Taxa',
@@ -159,10 +161,44 @@ export const ContractScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   clientId: 'clientId',
-  userId: 'userId'
+  userId: 'userId',
+  onNegotiation: 'onNegotiation'
 } as const
 
 export type ContractScalarFieldEnum = (typeof ContractScalarFieldEnum)[keyof typeof ContractScalarFieldEnum]
+
+
+export const NegotiationScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  valorOriginalPrincipal: 'valorOriginalPrincipal',
+  valorOriginalEmAberto: 'valorOriginalEmAberto',
+  valorOriginalTaxa: 'valorOriginalTaxa',
+  originalJurosPercent: 'originalJurosPercent',
+  valorDesconto: 'valorDesconto',
+  valorAcordado: 'valorAcordado',
+  tipo: 'tipo',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NegotiationScalarFieldEnum = (typeof NegotiationScalarFieldEnum)[keyof typeof NegotiationScalarFieldEnum]
+
+
+export const NegotiationInstallmentScalarFieldEnum = {
+  id: 'id',
+  negotiationId: 'negotiationId',
+  numeroParcela: 'numeroParcela',
+  valorParcela: 'valorParcela',
+  vencimentoEm: 'vencimentoEm',
+  pagoEm: 'pagoEm',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NegotiationInstallmentScalarFieldEnum = (typeof NegotiationInstallmentScalarFieldEnum)[keyof typeof NegotiationInstallmentScalarFieldEnum]
 
 
 export const ContractInstallmentScalarFieldEnum = {

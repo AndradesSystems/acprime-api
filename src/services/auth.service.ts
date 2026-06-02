@@ -16,6 +16,8 @@ export class AuthService {
       where: { email },
     });
 
+    console.log("DADOS DO USER", user);
+
     if (!user) {
       throw new AppError("Credenciais inválidas", 401);
     }
@@ -29,11 +31,13 @@ export class AuthService {
       await UserService.validateAccess(user.email);
     }
 
-    // FIX: Passando o email para dentro do Token
+    // Passando o email e o plano para dentro do Token
     const token = signToken({
       sub: user.id,
       email: user.email, 
       tipo: user.tipo as any,
+      plan: (user.plan as any) || "VAZIO", // 🔴 Injetando o plano no Token (Fallback para VAZIO se for nulo)
+      vencimento: user.vencimento
     });
 
     return {
@@ -43,6 +47,8 @@ export class AuthService {
         nome: user.nome,
         email: user.email,
         tipo: user.tipo,
+        plan: user.plan || "VAZIO", // 🔴 Retornando o plano no payload de resposta inicial do login
+        vencimento: user.vencimento
       },
     };
   }

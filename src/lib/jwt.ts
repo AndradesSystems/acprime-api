@@ -10,14 +10,18 @@ export type AuthPayload = JwtPayload & {
   sub: string;
   email: string;
   tipo: "ADMIN" | "OPERADOR" | "ASSINANTE";
+  plan: "VAZIO" | "STARTER" | "PRO"; // 🔴 Incluído na tipagem do Payload
+  vencimento: Date | null;
 };
 
 export function signToken(payload: { 
   sub: string; 
   email: string; 
-  tipo: AuthPayload["tipo"] 
+  tipo: AuthPayload["tipo"];
+  plan: AuthPayload["plan"]; // 🔴 Requerido ao assinar o token
+  vencimento: Date | null;
 }) {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "1d" });
 }
 
 export function verifyToken(token: string): AuthPayload {

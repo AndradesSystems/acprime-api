@@ -33,22 +33,28 @@ export class UserController {
     return res.status(201).json(user);
   }
 
-  // Criar Assinante (Painel Geral com controle de validade)
+  // Criar Assinante (Fluxo de teste gratuito ou criação padrão)
   static async createAssinante(req: Request, res: Response) {
-    const { nome, cpf, email, senha, diasValidade } = req.body;
+    const { nome, cpf, email, senha, diasValidade, plan } = req.body;
 
-    // Define a data de vencimento inicial
-    const vencimento = new Date();
-    vencimento.setDate(vencimento.getDate() + (diasValidade || 30));
-
-    const user = await UserService.createUser({
+    // 💡 Cria o usuário com plano VAZIO e vencimento null (relógio parado)
+    let user = await UserService.createUser({
       nome,
       cpf,
       email,
       senha,
-      tipo: "ASSINANTE",
-      vencimento
+      tipo: "ASSINANTE"
     });
+
+    // 🌟 Caso o Admin esteja criando um assinante que JÁ PAGOU antes de acessar
+    // Nós aproveitamos o método updateUser para injetar os dias e o plano contratado.
+    if (diasValidade || plan) {
+      user = await UserService.updateUser(user.id, {
+        diasValidade,
+        plan: plan || "STARTER" 
+      });
+    }
+
     return res.status(201).json(user);
   }
 
@@ -87,8 +93,9 @@ export class UserController {
    * Atualizar Usuário
    * Suporta:
    * - Troca de senha
+   * - Troca de plano (enviando plan: "STARTER" | "PRO")
    * - Bloqueio manual (enviando status: "BLOQUEADO")
-   * - Renovação (enviando diasValidade)
+   * - Renovação (enviando diasValidade: 30)
    */
   static async update(req: Request, res: Response) {
     try {

@@ -1,23 +1,28 @@
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middlewares/error.middleware";
 import type { ContractPeriodicity } from "../generated/prisma/enums";
+import { WhatsAppService } from "./whatsapp.service";
 
 export class ContractService {
   /* =========================================================
-        🛡️ APLICAÇÃO DE TAXAS
-        - Lógica de "Calendar Day" via UTC.
-        - Bulk Updates para performance.
-     ========================================================= */
+          🛡️ APLICAÇÃO DE TAXAS (CORREÇÃO TAXA DIÁRIA NO MENSAL)
+          - Lógica de "Calendar Day" via UTC.
+          - Taxa mensal aplicada por DIA de atraso (sem dividir por 30).
+          - Filtro estrito: Apenas status ABERTO e ATRASADO geram taxas.
+       ========================================================= */
   static async applyPendingTaxes(userId: string) {
+    console.log(`\n🚀 [TAX_ENGINE] Iniciando verificação de taxas para o usuário: ${userId}`);
     try {
       const now = new Date();
-      const hoje = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const hoje = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+      console.log(`📅 [TAX_ENGINE] Data base 'Hoje' (UTC): ${hoje.toISOString()}`);
 
       const [taxasConfig, contratos] = await Promise.all([
         prisma.taxa.findMany(),
         prisma.contract.findMany({
           where: {
             userId: userId,
+            // AJUSTE AQUI: Garante que QUITADO, COBRANCA_PESSOAL e CALOTEIRO fiquem de fora
             status: { in: ["ABERTO", "ATRASADO"] },
           },
           include: {
@@ -28,34 +33,51 @@ export class ContractService {
         }),
       ]);
 
+      console.log(`📊 [TAX_ENGINE] Contratos elegíveis encontrados: ${contratos.length}`);
       if (contratos.length === 0) return;
 
       const updatesPromises: any[] = [];
       const configMap = new Map(taxasConfig.map((t) => [t.type, Number(t.value)]));
 
       for (const contrato of contratos) {
+        console.log(`\n📄 [CONTRATO ${contrato.id}] Tipo: ${contrato.periodicity} | Status Atual: ${contrato.status} | Taxa Atual: ${contrato.taxa}`);
+
         let novaSomaTaxas = 0;
         const v = new Date(contrato.vencimentoEm);
 
         if (contrato.periodicity === "MONTHLY") {
           const valorConfig = configMap.get("MONTHLY") || 0;
+          console.log(`   [MONTHLY] Valor da taxa por dia de atraso: ${valorConfig}`);
+
           if (valorConfig > 0) {
-            const vencimentoPuro = new Date(Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate()));
+            const vencimentoPuro = new Date(Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), 0, 0, 0));
+            console.log(`   [MONTHLY] Vencimento do contrato (UTC): ${vencimentoPuro.toISOString()}`);
+
             if (vencimentoPuro < hoje) {
-              const dias = Math.round((hoje.getTime() - vencimentoPuro.getTime()) / (1000 * 60 * 60 * 24));
-              if (dias > 0) novaSomaTaxas = Number(((valorConfig / 30) * dias).toFixed(2));
+              const diffTime = hoje.getTime() - vencimentoPuro.getTime();
+              const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              console.log(`   [MONTHLY] Contrato vencido. Dias de atraso calculados: ${dias}`);
+
+              if (dias > 0) {
+                novaSomaTaxas = Number((dias * valorConfig).toFixed(2));
+                console.log(`   [MONTHLY] Taxa total calculada: ${novaSomaTaxas}`);
+              }
+            } else {
+              console.log(`   [MONTHLY] Contrato em dia ou vence hoje. Nenhuma taxa aplicada.`);
             }
           }
         } else {
           const valorMultaDiaria = configMap.get(contrato.periodicity) || 0;
+          console.log(`   [${contrato.periodicity}] Valor da multa diária: ${valorMultaDiaria} | Parcelas pendentes: ${contrato.installments.length}`);
 
           for (const inst of contrato.installments) {
             let taxaParcelaCalculada = 0;
             const vi = new Date(inst.dataVencimento);
-            const vencInstPuro = new Date(Date.UTC(vi.getUTCFullYear(), vi.getUTCMonth(), vi.getUTCDate()));
+            const vencInstPuro = new Date(Date.UTC(vi.getUTCFullYear(), vi.getUTCMonth(), vi.getUTCDate(), 0, 0, 0));
 
             if (vencInstPuro < hoje && valorMultaDiaria > 0) {
-              const dias = Math.round((hoje.getTime() - vencInstPuro.getTime()) / (1000 * 60 * 60 * 24));
+              const diffTime = hoje.getTime() - vencInstPuro.getTime();
+              const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               if (dias > 0) {
                 taxaParcelaCalculada = Number((dias * valorMultaDiaria).toFixed(2));
               }
@@ -73,28 +95,34 @@ export class ContractService {
           }
         }
 
+        // Mantém a alternância automática apenas entre os dois status permitidos pelo motor de taxas
         const novoStatus = novaSomaTaxas > 0 ? "ATRASADO" : "ABERTO";
+
         if (Math.abs(novaSomaTaxas - Number(contrato.taxa || 0)) > 0.01 || contrato.status !== novoStatus) {
+          console.log(`   📝 [DECISÃO] Atualizando Contrato para Taxa: ${novaSomaTaxas.toFixed(2)} | Status: ${novoStatus}`);
           updatesPromises.push(
             prisma.contract.update({
               where: { id: contrato.id },
               data: { taxa: Number(novaSomaTaxas.toFixed(2)), status: novoStatus },
             })
           );
+        } else {
+          console.log(`   💤 [DECISÃO] Contrato principal sem alterações pendentes.`);
         }
       }
 
       if (updatesPromises.length > 0) {
         await Promise.all(updatesPromises);
+        console.log(`✅ [TAX_ENGINE] Lote de atualizações concluído.`);
       }
     } catch (e) {
-      console.error("[TAX_ENGINE_ERROR]", e);
+      console.error("\n❌ [TAX_ENGINE_ERROR]", e);
     }
   }
 
   /* =========================================================
-        ✅ CRIAÇÃO (CREATE)
-     ========================================================= */
+            ✅ CRIAÇÃO (CREATE)
+          ========================================================= */
   static async create(data: {
     clientId: string;
     userId: string;
@@ -121,7 +149,11 @@ export class ContractService {
     };
 
     if (data.periodicity === "MONTHLY") {
-      contractData.valorEmAberto = data.valorPrincipal;
+      const jurosValor = data.valorPrincipal * (data.jurosPercent / 100);
+      const montanteTotal = data.valorPrincipal + jurosValor;
+
+      contractData.valorEmAberto = montanteTotal;
+
       const nextMonth = new Date(baseDate);
       nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
       contractData.vencimentoEm = nextMonth;
@@ -162,17 +194,42 @@ export class ContractService {
       contractData.installments = { create: installmentsList };
     }
 
-    return prisma.$transaction(async (tx) => {
-      const caixa = await tx.user.findUnique({
+    // Executa a transação incluindo o plano do usuário no retorno final
+    const contratoCriado = await prisma.$transaction(async (tx) => {
+      // 1. Busca os dados do usuário atual (incluindo o plano)
+      const user = await tx.user.findUnique({
         where: { id: data.userId },
       });
 
-      const saldoDisponivel = Number(caixa?.saldoOperacional || 0);
+      if (!user) {
+        throw new AppError("Usuário não encontrado.", 404);
+      }
+
+      // 🔴 TRAVA DE LIMITE PARA PLANO VAZIO
+      if (user.plan === "VAZIO") {
+        const contratosAtivosCount = await tx.contract.count({
+          where: {
+            userId: data.userId,
+            status: { not: "QUITADO" },
+          },
+        });
+
+        if (contratosAtivosCount >= 5) {
+          throw new AppError(
+            "Usuários no plano gratuito podem ter no máximo 5 contratos ativos simultaneamente. Faça o upgrade para continuar.",
+            400
+          );
+        }
+      }
+
+      // 2. Verificação de Saldo Operacional
+      const saldoDisponivel = Number(user.saldoOperacional || 0);
 
       if (saldoDisponivel < data.valorPrincipal) {
         throw new AppError("Saldo insuficiente em caixa.", 400);
       }
 
+      // 3. Deduz o valor do caixa operacional
       await tx.user.update({
         where: { id: data.userId },
         data: {
@@ -180,10 +237,69 @@ export class ContractService {
         },
       });
 
-      return tx.contract.create({
+      // 4. Efetua a criação do novo contrato
+      const novoContrato = await tx.contract.create({
         data: contractData,
+        include: { client: true },
       });
+
+      // 🟢 Injeta temporariamente o plano do usuário para usarmos na checagem do WhatsApp abaixo
+      return {
+        ...novoContrato,
+        userPlan: user.plan,
+      };
     });
+
+    // =========================================================
+    // DISPARO DA MENSAGEM AUTOMÁTICA (PÓS-CRIAÇÃO)
+    // =========================================================
+    // 🟢 CONDICIONAL DE PLANO: Só envia se for "STARTER" ou "PRO" (Bloqueia se for "VAZIO")
+    if (contratoCriado.client?.telefone && contratoCriado.userPlan !== "VAZIO") {
+      // Executa o envio em background para não atrasar a resposta da API
+      (async () => {
+        try {
+          const modalidades: Record<string, string> = {
+            DAILY: "Diário",
+            WEEKLY: "Semanal",
+            MONTHLY: "Mensal",
+          };
+
+          const formatarMoeda = (v: number) =>
+            new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+          const formatarData = (d: Date) =>
+            new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(d);
+
+          const nomeCliente = contratoCriado.client.nome;
+          const modalidadeStr = modalidades[contratoCriado.periodicity] || contratoCriado.periodicity;
+          const valorEmprestadoStr = formatarMoeda(Number(contratoCriado.valorPrincipal));
+          const valorTotalStr = formatarMoeda(Number(contratoCriado.valorEmAberto));
+          const dataVencimentoStr = formatarData(new Date(contratoCriado.vencimentoEm));
+
+          const idContratoSimplificado = contratoCriado.id.slice(-6).toUpperCase();
+
+          const mensagem = `Olá, ${nomeCliente}.\n\nSeu contrato foi criado com sucesso em nosso sistema.\n\n📄 Informações do contrato:\n\n• Número do contrato: # ${idContratoSimplificado}\n• Modalidade: ${modalidadeStr}\n• Valor emprestado: ${valorEmprestadoStr}\n• Taxa de juros: ${contratoCriado.jurosPercent}%\n• Valor total a pagar: ${valorTotalStr}\n• Data de vencimento: ${dataVencimentoStr}\n\n📌 Informações sobre atraso:\n\n• Contrato Diário → Multa de R$ 5 por dia de atraso\n• Contrato Semanal → Multa de R$ 15 por dia de atraso\n• Contrato Mensal → Multa de R$ 20 por dia de atraso\n\n⚠️ Após o vencimento, as taxas de atraso serão adicionadas automaticamente ao valor em aberto.\n\nQualquer dúvida, estamos à disposição.`;
+
+          await WhatsAppService.sendMessage(
+            contratoCriado.userId,
+            contratoCriado.client.telefone,
+            mensagem
+          );
+
+          console.log(`✉️ [Mensagem Automática] Notificação de contrato #${idContratoSimplificado} enviada para ${nomeCliente}`);
+        } catch (error: any) {
+          console.error(`❌ [WhatsApp] Erro ao enviar mensagem pós-criação:`, error.message);
+        }
+      })();
+    } else if (contratoCriado.userPlan === "VAZIO") {
+      console.log(`ℹ️ [Mensagem Ignorada] Usuário no plano VAZIO não possui envio automático de WhatsApp.`);
+    }
+
+    // Remove a propriedade temporária para retornar o objeto limpo do contrato
+    const { userPlan, ...retornoContrato } = contratoCriado;
+
+    // Retorna exatamente o contrato criado como antes
+    return retornoContrato;
   }
 
   /* =========================================================
@@ -257,13 +373,13 @@ export class ContractService {
     });
   }
 
-/* =========================================================
-      🔍 LIST BY CLIENT ID (Novo método para o seu endpoint)
-     ========================================================= */
+  /* =========================================================
+        🔍 LIST BY CLIENT ID (Novo método para o seu endpoint)
+       ========================================================= */
   static async listByClientId(clientId: string, userId: string) {
     // Usamos findMany pois um cliente pode ter mais de um contrato
     const contracts = await prisma.contract.findMany({
-      where: { 
+      where: {
         clientId, // Filtra pelo cliente correto
         userId    // Garante segurança: apenas contratos do usuário logado
       },
@@ -283,9 +399,9 @@ export class ContractService {
      ========================================================= */
   static async getById(contractId: string, userId: string) {
     const c = await prisma.contract.findFirst({
-      where: { 
-        id: contractId, 
-        userId 
+      where: {
+        id: contractId,
+        userId
       },
       include: {
         client: true,

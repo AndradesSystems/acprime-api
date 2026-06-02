@@ -21,6 +21,7 @@ enum ContractStatus {
   QUITADO
   COBRANCA_PESSOAL
   CALOTEIRO
+  NEGOCIADO
 }
 
 enum PaymentType {
@@ -67,6 +68,17 @@ enum UserPlan {
   VAZIO
   STARTER
   PRO
+}
+
+enum NegotiationType {
+  A_VISTA
+  PARCELADO
+}
+
+enum NegotiationStatus {
+  PENDENTE
+  PAGO
+  QUEBRADO // Se o cliente atrasar a negociação
 }
 
 // --- MODELS ---
@@ -162,27 +174,86 @@ model ClientScore {
 }
 
 model Contract {
-  id             String                @id @default(cuid())
-  valorPrincipal Decimal               @db.Decimal(12, 2)
-  valorEmAberto  Decimal               @db.Decimal(12, 2)
-  taxa           Decimal               @default(0.00) @db.Decimal(12, 2)
-  jurosPercent   Decimal               @db.Decimal(5, 2)
+  id             String               @id @default(cuid())
+  valorPrincipal Decimal              @db.Decimal(12, 2)
+  valorEmAberto  Decimal              @db.Decimal(12, 2)
+  taxa           Decimal              @default(0.00) @db.Decimal(12, 2)
+  jurosPercent   Decimal              @db.Decimal(5, 2)
   vencimentoEm   DateTime
   periodicity    ContractPeriodicity
-  status         ContractStatus        @default(ABERTO)
+  status         ContractStatus       @default(ABERTO)
   historico      String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   clientId       String
-  client         Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
   userId         String
-  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments       PaymentHistory[]
   installments   ContractInstallment[]
+
+  // Novos Campos para Negociação
+  onNegotiation  Boolean              @default(false)
+  negotiations   Negotiation[]        // Um contrato pode ter um histórico de tentativas de negociação
 
   @@index([clientId])
   @@index([userId])
   @@map("contracts")
+}
+
+// ============================================================================
+model Negotiation {
+  id                   String                 @id @default(cuid())
+  contractId           String
+  contract             Contract               @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  // ============================================================================
+  // FOTOGRAFIA DOS VALORES ORIGINAIS DO CONTRATO NO MOMENTO DO ACORDO
+  // ============================================================================
+  valorOriginalPrincipal Decimal              @db.Decimal(12, 2) // O valor base do contrato
+  valorOriginalEmAberto  Decimal              @db.Decimal(12, 2) // O saldo devedor total acumulado até hoje (com os juros do tempo de atraso)
+  valorOriginalTaxa      Decimal              @db.Decimal(12, 2) // A taxa acumulada até o momento
+  originalJurosPercent   Decimal              @db.Decimal(5, 2)  // O percentual de juros praticado no contrato original
+
+  // ============================================================================
+  // VALORES RESULTANTES DA NEGOCIAÇÃO
+  // ============================================================================
+  valorDesconto        Decimal                @default(0.00) @db.Decimal(12, 2)
+  valorAcordado        Decimal                @db.Decimal(12, 2) // (valorOriginalEmAberto - valorDesconto)
+  
+  tipo                 NegotiationType        // A_VISTA ou PARCELADO
+  status               NegotiationStatus      @default(PENDENTE)
+  
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  
+  installments         NegotiationInstallment[]
+
+  @@index([contractId])
+  @@map("negotiations")
+}
+
+// ============================================================================
+// NOVA TABELA: Parcelas da Negociação (Seja 1 à vista ou X parceladas)
+// ============================================================================
+model NegotiationInstallment {
+  id             String            @id @default(cuid())
+  negotiationId  String
+  negotiation    Negotiation       @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+  
+  numeroParcela  Int               // Ex: 1 se for à vista, ou 1, 2, 3... se for parcelado
+  valorParcela   Decimal           @db.Decimal(12, 2) // Valor de cada parcela calculada
+  vencimentoEm   DateTime          // Data de vencimento desta parcela da negociação
+  
+  // Controle de Pagamento do Acordo
+  pagoEm         DateTime?         // Registra o exato momento do pagamento (null se pendente)
+  status         NegotiationStatus @default(PENDENTE) // PENDENTE, PAGO, QUEBRADO
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([negotiationId])
+  @@map("negotiation_installments")
 }
 
 model ContractInstallment {

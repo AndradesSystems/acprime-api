@@ -43,6 +43,16 @@ export type ClientScore = Prisma.ClientScoreModel
  */
 export type Contract = Prisma.ContractModel
 /**
+ * Model Negotiation
+ * 
+ */
+export type Negotiation = Prisma.NegotiationModel
+/**
+ * Model NegotiationInstallment
+ * 
+ */
+export type NegotiationInstallment = Prisma.NegotiationInstallmentModel
+/**
  * Model ContractInstallment
  * 
  */

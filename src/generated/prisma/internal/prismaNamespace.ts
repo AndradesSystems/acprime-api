@@ -389,6 +389,8 @@ export const ModelName = {
   Client: 'Client',
   ClientScore: 'ClientScore',
   Contract: 'Contract',
+  Negotiation: 'Negotiation',
+  NegotiationInstallment: 'NegotiationInstallment',
   ContractInstallment: 'ContractInstallment',
   PaymentHistory: 'PaymentHistory',
   Taxa: 'Taxa',
@@ -409,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "whatsappSession" | "client" | "clientScore" | "contract" | "contractInstallment" | "paymentHistory" | "taxa" | "personalExpense" | "balanceLog"
+    modelProps: "user" | "whatsappSession" | "client" | "clientScore" | "contract" | "negotiation" | "negotiationInstallment" | "contractInstallment" | "paymentHistory" | "taxa" | "personalExpense" | "balanceLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -780,6 +782,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ContractCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ContractCountAggregateOutputType> | number
+        }
+      }
+    }
+    Negotiation: {
+      payload: Prisma.$NegotiationPayload<ExtArgs>
+      fields: Prisma.NegotiationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NegotiationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NegotiationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        findFirst: {
+          args: Prisma.NegotiationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NegotiationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        findMany: {
+          args: Prisma.NegotiationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>[]
+        }
+        create: {
+          args: Prisma.NegotiationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        createMany: {
+          args: Prisma.NegotiationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NegotiationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>[]
+        }
+        delete: {
+          args: Prisma.NegotiationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        update: {
+          args: Prisma.NegotiationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        deleteMany: {
+          args: Prisma.NegotiationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NegotiationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NegotiationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>[]
+        }
+        upsert: {
+          args: Prisma.NegotiationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationPayload>
+        }
+        aggregate: {
+          args: Prisma.NegotiationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNegotiation>
+        }
+        groupBy: {
+          args: Prisma.NegotiationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NegotiationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NegotiationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NegotiationCountAggregateOutputType> | number
+        }
+      }
+    }
+    NegotiationInstallment: {
+      payload: Prisma.$NegotiationInstallmentPayload<ExtArgs>
+      fields: Prisma.NegotiationInstallmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NegotiationInstallmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NegotiationInstallmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        findFirst: {
+          args: Prisma.NegotiationInstallmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NegotiationInstallmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        findMany: {
+          args: Prisma.NegotiationInstallmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>[]
+        }
+        create: {
+          args: Prisma.NegotiationInstallmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        createMany: {
+          args: Prisma.NegotiationInstallmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NegotiationInstallmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>[]
+        }
+        delete: {
+          args: Prisma.NegotiationInstallmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        update: {
+          args: Prisma.NegotiationInstallmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.NegotiationInstallmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NegotiationInstallmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NegotiationInstallmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.NegotiationInstallmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NegotiationInstallmentPayload>
+        }
+        aggregate: {
+          args: Prisma.NegotiationInstallmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNegotiationInstallment>
+        }
+        groupBy: {
+          args: Prisma.NegotiationInstallmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NegotiationInstallmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NegotiationInstallmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NegotiationInstallmentCountAggregateOutputType> | number
         }
       }
     }
@@ -1272,10 +1422,44 @@ export const ContractScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   clientId: 'clientId',
-  userId: 'userId'
+  userId: 'userId',
+  onNegotiation: 'onNegotiation'
 } as const
 
 export type ContractScalarFieldEnum = (typeof ContractScalarFieldEnum)[keyof typeof ContractScalarFieldEnum]
+
+
+export const NegotiationScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  valorOriginalPrincipal: 'valorOriginalPrincipal',
+  valorOriginalEmAberto: 'valorOriginalEmAberto',
+  valorOriginalTaxa: 'valorOriginalTaxa',
+  originalJurosPercent: 'originalJurosPercent',
+  valorDesconto: 'valorDesconto',
+  valorAcordado: 'valorAcordado',
+  tipo: 'tipo',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NegotiationScalarFieldEnum = (typeof NegotiationScalarFieldEnum)[keyof typeof NegotiationScalarFieldEnum]
+
+
+export const NegotiationInstallmentScalarFieldEnum = {
+  id: 'id',
+  negotiationId: 'negotiationId',
+  numeroParcela: 'numeroParcela',
+  valorParcela: 'valorParcela',
+  vencimentoEm: 'vencimentoEm',
+  pagoEm: 'pagoEm',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NegotiationInstallmentScalarFieldEnum = (typeof NegotiationInstallmentScalarFieldEnum)[keyof typeof NegotiationInstallmentScalarFieldEnum]
 
 
 export const ContractInstallmentScalarFieldEnum = {
@@ -1516,6 +1700,41 @@ export type ListEnumContractStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'NegotiationType'
+ */
+export type EnumNegotiationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NegotiationType'>
+    
+
+
+/**
+ * Reference to a field of type 'NegotiationType[]'
+ */
+export type ListEnumNegotiationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NegotiationType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'NegotiationStatus'
+ */
+export type EnumNegotiationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NegotiationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'NegotiationStatus[]'
+ */
+export type ListEnumNegotiationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NegotiationStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'InstallmentStatus'
  */
 export type EnumInstallmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InstallmentStatus'>
@@ -1568,13 +1787,6 @@ export type EnumTransactionFlowFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'TransactionFlow[]'
  */
 export type ListEnumTransactionFlowFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TransactionFlow[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1705,6 +1917,8 @@ export type GlobalOmitConfig = {
   client?: Prisma.ClientOmit
   clientScore?: Prisma.ClientScoreOmit
   contract?: Prisma.ContractOmit
+  negotiation?: Prisma.NegotiationOmit
+  negotiationInstallment?: Prisma.NegotiationInstallmentOmit
   contractInstallment?: Prisma.ContractInstallmentOmit
   paymentHistory?: Prisma.PaymentHistoryOmit
   taxa?: Prisma.TaxaOmit

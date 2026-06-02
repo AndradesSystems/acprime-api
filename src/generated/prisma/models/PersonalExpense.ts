@@ -649,10 +649,6 @@ export type EnumTransactionFlowFieldUpdateOperationsInput = {
   set?: $Enums.TransactionFlow
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type EnumTransactionStatusFieldUpdateOperationsInput = {
   set?: $Enums.TransactionStatus
 }
