@@ -2,11 +2,12 @@ import { prisma } from "../lib/prisma";
 import { AppError } from "../middlewares/error.middleware";
 import type { ContractPeriodicity } from "../generated/prisma/enums";
 import { WhatsAppService } from "./whatsapp.service";
+import { ContractTemplates } from "../templates/contract-messages.template";
 
 export class ContractService {
   /* =========================================================
           🛡️ APLICAÇÃO DE TAXAS (CORREÇÃO TAXA DIÁRIA NO MENSAL)
-          - Lógica de "Calendar Day" via UTC.
+          - Lógica de "Calendar Day" via UTC Corrigida para fuso local.
           - Taxa mensal aplicada por DIA de atraso (sem dividir por 30).
           - Filtro estrito: Apenas status ABERTO e ATRASADO geram taxas.
        ========================================================= */
@@ -14,15 +15,17 @@ export class ContractService {
     console.log(`\n🚀 [TAX_ENGINE] Iniciando verificação de taxas para o usuário: ${userId}`);
     try {
       const now = new Date();
-      const hoje = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-      console.log(`📅 [TAX_ENGINE] Data base 'Hoje' (UTC): ${hoje.toISOString()}`);
+
+      // 🟢 CORREÇÃO: Captura Ano, Mês e Dia locais (Brasil) e gera o UTC zerado.
+      // Isso evita que o motor "ande um dia para frente" quando passa das 21:00h.
+      const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
+      console.log(`📅 [TAX_ENGINE] Data base 'Hoje' (Alinhada com fuso local): ${hoje.toISOString()}`);
 
       const [taxasConfig, contratos] = await Promise.all([
         prisma.taxa.findMany(),
         prisma.contract.findMany({
           where: {
             userId: userId,
-            // AJUSTE AQUI: Garante que QUITADO, COBRANCA_PESSOAL e CALOTEIRO fiquem de fora
             status: { in: ["ABERTO", "ATRASADO"] },
           },
           include: {
@@ -44,6 +47,7 @@ export class ContractService {
 
         let novaSomaTaxas = 0;
         const v = new Date(contrato.vencimentoEm);
+        console.log("contrato vence em: " + v);
 
         if (contrato.periodicity === "MONTHLY") {
           const valorConfig = configMap.get("MONTHLY") || 0;
@@ -53,6 +57,7 @@ export class ContractService {
             const vencimentoPuro = new Date(Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), 0, 0, 0));
             console.log(`   [MONTHLY] Vencimento do contrato (UTC): ${vencimentoPuro.toISOString()}`);
 
+            // Só aplica se o dia do vencimento já passou em relação ao dia de hoje local
             if (vencimentoPuro < hoje) {
               const diffTime = hoje.getTime() - vencimentoPuro.getTime();
               const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -75,6 +80,7 @@ export class ContractService {
             const vi = new Date(inst.dataVencimento);
             const vencInstPuro = new Date(Date.UTC(vi.getUTCFullYear(), vi.getUTCMonth(), vi.getUTCDate(), 0, 0, 0));
 
+            // Só aplica se o dia do vencimento da parcela for estritamente menor que o dia de hoje
             if (vencInstPuro < hoje && valorMultaDiaria > 0) {
               const diffTime = hoje.getTime() - vencInstPuro.getTime();
               const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -95,7 +101,6 @@ export class ContractService {
           }
         }
 
-        // Mantém a alternância automática apenas entre os dois status permitidos pelo motor de taxas
         const novoStatus = novaSomaTaxas > 0 ? "ATRASADO" : "ABERTO";
 
         if (Math.abs(novaSomaTaxas - Number(contrato.taxa || 0)) > 0.01 || contrato.status !== novoStatus) {
@@ -113,7 +118,7 @@ export class ContractService {
 
       if (updatesPromises.length > 0) {
         await Promise.all(updatesPromises);
-        console.log(`✅ [TAX_ENGINE] Lote de atualizações concluído.`);
+        console.log(`✅ [TAX_ENGINE] Lote de atualizações concluído com sucesso.`);
       }
     } catch (e) {
       console.error("\n❌ [TAX_ENGINE_ERROR]", e);
@@ -253,32 +258,42 @@ export class ContractService {
     // =========================================================
     // DISPARO DA MENSAGEM AUTOMÁTICA (PÓS-CRIAÇÃO)
     // =========================================================
-    // 🟢 CONDICIONAL DE PLANO: Só envia se for "STARTER" ou "PRO" (Bloqueia se for "VAZIO")
     if (contratoCriado.client?.telefone && contratoCriado.userPlan !== "VAZIO") {
-      // Executa o envio em background para não atrasar a resposta da API
       (async () => {
         try {
-          const modalidades: Record<string, string> = {
-            DAILY: "Diário",
-            WEEKLY: "Semanal",
-            MONTHLY: "Mensal",
-          };
-
           const formatarMoeda = (v: number) =>
             new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
           const formatarData = (d: Date) =>
             new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(d);
 
-          const nomeCliente = contratoCriado.client.nome;
-          const modalidadeStr = modalidades[contratoCriado.periodicity] || contratoCriado.periodicity;
-          const valorEmprestadoStr = formatarMoeda(Number(contratoCriado.valorPrincipal));
-          const valorTotalStr = formatarMoeda(Number(contratoCriado.valorEmAberto));
-          const dataVencimentoStr = formatarData(new Date(contratoCriado.vencimentoEm));
+          const principal = Number(contratoCriado.valorPrincipal);
+          const jurosPercent = Number(contratoCriado.jurosPercent);
+          const totalEmAberto = Number(contratoCriado.valorEmAberto);
 
-          const idContratoSimplificado = contratoCriado.id.slice(-6).toUpperCase();
+          // Cálculos específicos para os templates
+          const jurosDoMes = principal * (jurosPercent / 100);
+          const numParcelas = contratoCriado.periodicity === "DAILY" ? 20 : 4;
+          const valorParcelaCalculada = totalEmAberto / numParcelas;
 
-          const mensagem = `Olá, ${nomeCliente}.\n\nSeu contrato foi criado com sucesso em nosso sistema.\n\n📄 Informações do contrato:\n\n• Número do contrato: # ${idContratoSimplificado}\n• Modalidade: ${modalidadeStr}\n• Valor emprestado: ${valorEmprestadoStr}\n• Taxa de juros: ${contratoCriado.jurosPercent}%\n• Valor total a pagar: ${valorTotalStr}\n• Data de vencimento: ${dataVencimentoStr}\n\n📌 Informações sobre atraso:\n\n• Contrato Diário → Multa de R$ 5 por dia de atraso\n• Contrato Semanal → Multa de R$ 15 por dia de atraso\n• Contrato Mensal → Multa de R$ 20 por dia de atraso\n\n⚠️ Após o vencimento, as taxas de atraso serão adicionadas automaticamente ao valor em aberto.\n\nQualquer dúvida, estamos à disposição.`;
+          const dadosTemplate = {
+            nomeCliente: contratoCriado.client.nome,
+            idContrato: contratoCriado.id.slice(-6).toUpperCase(),
+            valorEmprestado: formatarMoeda(principal),
+            taxaJuros: String(contratoCriado.jurosPercent),
+            valorTotal: formatarMoeda(totalEmAberto),
+            valorJuros: formatarMoeda(jurosDoMes),
+            valorParcela: formatarMoeda(valorParcelaCalculada),
+            dataVencimento: formatarData(new Date(contratoCriado.vencimentoEm)),
+          };
+
+          // Executa a função do template dinamicamente usando a periodicidade recebida
+          const builder = ContractTemplates[contratoCriado.periodicity];
+          if (!builder) {
+            throw new Error(`Template não encontrado para a periodicidade: ${contratoCriado.periodicity}`);
+          }
+
+          const mensagem = builder(dadosTemplate);
 
           await WhatsAppService.sendMessage(
             contratoCriado.userId,
@@ -286,7 +301,7 @@ export class ContractService {
             mensagem
           );
 
-          console.log(`✉️ [Mensagem Automática] Notificação de contrato #${idContratoSimplificado} enviada para ${nomeCliente}`);
+          console.log(`✉️ [Mensagem Automática] Notificação do contrato #${dadosTemplate.idContrato} enviada.`);
         } catch (error: any) {
           console.error(`❌ [WhatsApp] Erro ao enviar mensagem pós-criação:`, error.message);
         }
@@ -295,10 +310,7 @@ export class ContractService {
       console.log(`ℹ️ [Mensagem Ignorada] Usuário no plano VAZIO não possui envio automático de WhatsApp.`);
     }
 
-    // Remove a propriedade temporária para retornar o objeto limpo do contrato
     const { userPlan, ...retornoContrato } = contratoCriado;
-
-    // Retorna exatamente o contrato criado como antes
     return retornoContrato;
   }
 

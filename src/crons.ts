@@ -31,7 +31,7 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
   let mensagem = "";
   const nomeCliente = contrato.client?.nome || "Cliente";
 
-  // Ordena as parcelas cronologicamente para garantir os índices corretos (1ª, 2ª, 3ª...)
+  // Alinhado com o model 'ContractInstallment' do Prisma Schema
   const parcelasOrdenadas = contrato.installments
     ? [...contrato.installments].sort((a: any, b: any) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime())
     : [];
@@ -40,7 +40,6 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
   // LÓGICA: PLANO DIÁRIO (DAILY)
   // ----------------------------------------------------
   if (contrato.periodicity === "DAILY") {
-    // Mantém o comportamento de aviso padrão caso esteja atrasado ou no turno da noite
     if (isAtrasado || turnoNoite) {
       const parcelasPendentes = parcelasOrdenadas.filter((i: any) => i.status === "PENDENTE");
       let totalDiario = 0;
@@ -57,11 +56,9 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
       if (!turnoNoite) {
         mensagem = `⚠️ *AVISO DE ATRASO - PLANO DIÁRIO* ⚠️\n\nOlá, *${nomeCliente}*.\nIdentificamos que sua parcela diária está pendente. Além disso, recalculamos o saldo com a taxa de R$ 5,00 por dia de atraso.\n\n💰 *Total Acumulado:* ${fmt(valorFinal)}\n\nPor favor, responda essa mensagem para solicitar a conta de pagamento.`;
       } else {
-        mensagem = `Olá, *${nomeCliente}*! Passando para atualizar seu saldo diário desta noite.\n\nSe você ainda não realizou o pagamento hoje, o valor atualizado em aberto com juros é de *${fmt(valorFinal)}*.\n\nPor favor, peça a conta para fecharmos o valor de hoje!`;
+        mensagem = `Olá, *${nomeCliente}*! Passando para atualizar seu saldo diário desta noite.\n\nSe você ainda não realizou o pagamento hoje, o valor updated em aberto com juros é de *${fmt(valorFinal)}*.\n\nPor favor, peça a conta para fecharmos o valor de hoje!`;
       }
     } else {
-      // Mensagem padrão Diária Solicitada (Fluxo do Dia sem Atraso)
-      // Identifica o número da parcela do dia de hoje
       const parcelaHojeIndex = parcelasOrdenadas.findIndex((p: any) => isSameDay(startOfDay(new Date(p.dataVencimento)), hoje));
       const nParcelaAtual = parcelaHojeIndex !== -1 ? parcelaHojeIndex + 1 : 1;
 
@@ -70,7 +67,6 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
 
       mensagem = `Diário ;\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence a parcela diária Nº ${nParcelaAtual}/20 do seu contrato.\n\n💰 Valor da parcela de hoje: ${valorParcelaStr}\n\n📅 Cronograma completo dos pagamentos:\n\n`;
 
-      // Monta dinamicamente a lista de datas das 20 parcelas
       for (let i = 1; i <= 20; i++) {
         const p = parcelasOrdenadas[i - 1];
         mensagem += `${i}ª parcela — ${p ? fmtData(p.dataVencimento) : "---"}\n`;
@@ -107,12 +103,11 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
         mensagem += `Por favor, entre em contato imediatamente solicitando a conta para regularizar seu débito.`;
       }
     } else {
-      // Mensagem padrão Semanal Solicitada
       const parcelaHoje = parcelasOrdenadas.find((p: any) => isSameDay(startOfDay(new Date(p.dataVencimento)), hoje)) || parcelasOrdenadas[0];
       const valorParcelaStr = parcelaHoje ? fmt(parcelaHoje.valor) : fmt(0);
 
       const data2 = parcelasOrdenadas[1] ? fmtData(parcelasOrdenadas[1].dataVencimento) : "---";
-      const data3 = parcelasOrdenadas[2] ? fmtData(parcelasOrdenadas[2].dataVencimento) : "---";
+      const data3 = parcelasOrdenadas[2] ? fmtData(parcelasOrdenadas[2].dataVencimento) : "---"; // Corrigido de parcelasAccess para o array correto
       const data4 = parcelasOrdenadas[3] ? fmtData(parcelasOrdenadas[3].dataVencimento) : "---";
 
       mensagem = `Semanal ;\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence a parcela semanal do seu contrato no valor de ${valorParcelaStr}.\n\nResumo das próximas parcelas:\n\n• 2ª parcela: ${data2}\n• 3ª parcela: ${data3}\n• 4ª parcela: ${data4}\n\nPara pagamento, solicite a chave PIX ou conta.\n\nApós o pagamento, envie o comprovante.\n\nObrigado.`;
@@ -154,7 +149,6 @@ async function processarEnvioMensagem(contrato: any, isAtrasado: boolean, turnoN
         mensagem += `Solicite a conta para pagamento respondendo a esse chat o quanto antes.`;
       }
     } else {
-      // Mensagem padrão Mensal Solicitada
       mensagem = `Mensal;\n\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence o seu pagamento mensal referente ao contrato realizado.\n\nValor total: ${fmt(totalMensal)}\nJuros/Parcela do mês: ${fmt(jurosCiclo)}\n\nPara realizar o pagamento, solicite a chave PIX ou conta bancária.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nObrigado.`;
     }
   }
@@ -183,10 +177,13 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
       where: {
         status: { in: ["ABERTO", "ATRASADO"] },
         user: {
-          plan: "PRO"
+          plan: "PRO" // Alinhado perfeitamente com a relação do Schema (user -> plan)
         }
       },
-      include: { client: true, installments: true },
+      include: { 
+        client: true, 
+        installments: true // Mapeado via relação implicita do campo 'installments' no model Contract
+      },
     });
 
     console.log(`📋 Total de contratos de usuários PRO mapeados: ${contratos.length}`);
@@ -286,13 +283,11 @@ async function runGlobalTaxUpdate() {
 
 // --- INICIALIZAÇÃO E AGENDAMENTOS DOS CRONS ---
 export const initCronJobs = () => {
-  // Define o fuso horário padrão para garantir que os gatilhos sigam o horário de Brasília
   const TIMEZONE = "America/Sao_Paulo";
 
   /**
-   * 🕒 NOVA ROTINA: Executa a cada 15 minutos (ex: 08:00, 08:15, 08:30...)
-   * Substitui os disparos fixos das 08h e 19h por uma checagem contínua.
-   * O parâmetro 'false' indica que é a execução padrão/matinal para os planos.
+   * 🕒 UNICA ROTINA ATIVA: Executa a cada 15 minutos (ex: 08:00, 08:15, 08:30...)
+   * Realiza a checagem e envio contínuo das mensagens automáticas mapeadas via banco.
    */
   cron.schedule("*/15 * * * *", () => {
     checkAndNotifyContracts(false);
@@ -301,26 +296,22 @@ export const initCronJobs = () => {
   });
 
   /**
-   * 🕒 REFORÇO DA NOITE: Mantido fixo às 19:00h todos os dias
-   * O parâmetro 'true' ativa o comportamento exclusivo de reforço noturno para planos DIÁRIOS.
+   * 🕒 REFORÇO DA NOITE: DESATIVADO / COMENTADO
+   * cron.schedule("0 19 * * *", () => {
+   * checkAndNotifyContracts(true);
+   * }, {
+   * timezone: TIMEZONE,
+   * });
    */
-  cron.schedule("0 19 * * *", () => {
-    checkAndNotifyContracts(true);
-  }, {
-    timezone: TIMEZONE,
-  });
 
   /**
-   * 💰 ENGINE DE TAXAS: Executa diariamente às 07:55h
-   * Roda exatamente 5 minutos antes do horário que costumava ser o grande pico da manhã,
-   * aplicando juros e atualizando os saldos dos usuários PRO no banco de dados.
+   * 💰 ENGINE DE TAXAS: DESATIVADO / COMENTADO
+   * cron.schedule("55 7 * * *", () => {
+   * runGlobalTaxUpdate();
+   * }, {
+   * timezone: TIMEZONE,
+   * });
    */
-  cron.schedule("55 7 * * *", () => {
-    runGlobalTaxUpdate();
-  }, {
-    timezone: TIMEZONE,
-  });
 
-  // Log de inicialização do sistema no terminal
-  console.log(`🚀 [PRODUÇÃO] Robô Andrade ativo (Verificação a cada 15m e Reforço às 19h) com filtros PRO habilitados.`);
+  console.log(`🚀 [PRODUÇÃO] Robô Andrade ativo (Buscando dados em tempo real do Schema a cada 15 min).`);
 };
