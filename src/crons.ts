@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { isSameDay, addDays, format } from "date-fns";
+import { isSameDay, addDays, format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { prisma } from "./lib/prisma";
 import { ContractService } from "./services/contract.service";
@@ -11,7 +11,7 @@ const isTestMode = false;
 // --- FUNÇÃO AUXILIAR DE ESPERA (SLEEP) ---
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// --- FORMATADOR DE MOEDA COM CONVERSÃO DE DECIMAL ---
+// --- FORMATADOR DE MOEDA ---
 const fmt = (v: any) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -26,7 +26,6 @@ const fmtData = (dateInput: any) => {
 
 // --- FUNÇÃO DE MONTAGEM E DISPARO DA NOTIFICAÇÃO ---
 async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJE" | "ATRASADO", turnoNoite: boolean = false): Promise<boolean> {
-  // Ajuste de fuso horário civil base (Brasil) para cálculo em memória
   const now = new Date();
   const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
 
@@ -66,9 +65,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
       } else {
         mensagem = `Olá, *${nomeCliente}*! Passando para atualizar seu saldo diário desta noite.\n\nSe você ainda não realizou o pagamento hoje, o valor em aberto detalhado com juros é de *${fmt(valorFinal)}*.\n\nPor favor, peça a conta para fecharmos o valor de hoje!`;
       }
-    } else if (statusEnvio === "ANTES") {
-      mensagem = `Olá, ${nomeCliente}.\n\nPassando para lembrar que amanhã vence uma nova parcela diária do seu contrato.\n\n💰 Valor da parcela: ${fmt(parcelasOrdenadas[0]?.valor || 0)}\n\nMantenha seus pagamentos em dia para evitar a incidência de taxas por atraso. Obrigado!`;
-    } else {
+    } else if (statusEnvio === "HOJE") {
       const parcelaHojeIndex = parcelasOrdenadas.findIndex((p: any) => {
         const pVenc = new Date(p.dataVencimento);
         const pVencPuro = new Date(Date.UTC(pVenc.getUTCFullYear(), pVenc.getUTCMonth(), pVenc.getUTCDate(), 0, 0, 0));
@@ -114,7 +111,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
       mensagem = `⚠️ *COBRANÇA - PARCELA SEMANAL EM ATRASO* ⚠️\n\nOlá, *${nomeCliente}*.\nSua(s) parcela(s) semanal(is) encontra(m)-se em atraso:\n\n${detalheParcelas}\n📊 *Resumo Financeiro:*\n💵 *Subtotal Parcelas:* ${fmt(principalSemanal)}\n📈 *Juros por Atraso:* ${fmt(jurosSemanal)}\n💰 *Total Atualizado:* ${fmt(totalSemanal)}\n\nPor favor, entre em contato imediatamente solicitando a conta para regularizar seu débito.`;
     } else if (statusEnvio === "ANTES") {
       mensagem = `Olá, ${nomeCliente}.\n\nPassando para lembrar que amanhã vence a sua parcela semanal do contrato.\n\n💰 Valor da parcela: ${fmt(parcelasOrdenadas[0]?.valor || 0)}\n\nPor favor, programe-se para realizar o pagamento e evitar taxas adicionais de atraso.`;
-    } else {
+    } else if (statusEnvio === "HOJE") {
       const parcelaHoje = parcelasOrdenadas.find((p: any) => {
         const pVenc = new Date(p.dataVencimento);
         const pVencPuro = new Date(Date.UTC(pVenc.getUTCFullYear(), pVenc.getUTCMonth(), pVenc.getUTCDate(), 0, 0, 0));
@@ -136,7 +133,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
     const principal = Number(contrato.valorPrincipal);
     const percentualJuros = Number(contrato.jurosPercent);
     const jurosCiclo = principal * (percentualJuros / 100);
-    const taxaServico = Number(contrato.taxa); // A taxa total acumulada vinda do banco
+    const taxaServico = Number(contrato.taxa);
 
     const totalMensal = principal + jurosCiclo;
 
@@ -144,14 +141,13 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
       mensagem = `⚠️ *NOTIFICAÇÃO DE ATRASO MENSAL* ⚠️\n\nOlá, *${nomeCliente}*.\nIdentificamos pendências no pagamento do seu plano mensal vencido em ${fmtData(contrato.vencimentoEm)}.\n\n💵 *Valor Principal:* ${fmt(principal)}\n📈 *Juros do Período:* ${fmt(jurosCiclo)}\n🔧 *Taxa Total de Atraso Acumulada:* ${fmt(taxaServico)}\n💰 *Total Geral Atualizado:* ${fmt(totalMensal + taxaServico)}\n\nSolicite a conta para pagamento respondendo a esse chat o quanto antes para evitar novas cobranças diárias.`;
     } else if (statusEnvio === "ANTES") {
       mensagem = `Olá, ${nomeCliente}.\n\nLembrete amigável: Seu contrato na modalidade Mensal vence amanhã (${fmtData(addDays(hoje, 1))}).\n\nOpções para amanhã:\n• Apenas Juros: ${fmt(jurosCiclo)}\n• Quitação Total: ${fmt(totalMensal)}\n\nQualquer dúvida, estamos à disposição.`;
-    } else {
-      mensagem = `Mensal;\n\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence o seu pagamento mensal referente ao contrato realizado.\n\nValor total para Quitação: ${fmt(totalMensal)}\nJuros do mês: ${fmt(jurosCiclo)}\n\nPara realizar o pagamento, solicite a chave PIX ou conta bancária.\n\nApós o pagamento, envie o comprovante para confirmation.\n\nObrigado.`;
+    } else if (statusEnvio === "HOJE") {
+      mensagem = `Mensal;\n\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence o seu pagamento mensal referente ao contrato realizado.\n\nValor total para Quitação: ${fmt(totalMensal)}\nJuros do mês: ${fmt(jurosCiclo)}\n\nPara realizar o pagamento, solicite a chave PIX ou conta bancária.\n\nApós o pagamento, envie o comprovante para confirmação.\n\nObrigado.`;
     }
   }
 
   if (mensagem) {
     try {
-      // 🟢 CORRIGIDO: Variável interna alterada de 'message' para 'mensagem' para evitar falhas em runtime
       await WhatsAppService.sendMessage(contrato.userId, contrato.client.telefone, mensagem);
       console.log(`✉️ [Disparo Efetuado] (${statusEnvio}) para ${nomeCliente} [${contrato.periodicity}]`);
       return true;
@@ -173,7 +169,7 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
   try {
     const contratos = await prisma.contract.findMany({
       where: {
-        status: { in: ["ABERTO", "ATRASADO"] }, // Restrito estritamente a estes dois status permitidos
+        status: { in: ["ABERTO", "ATRASADO"] },
         user: { plan: "PRO" }
       },
       include: { client: true, installments: true },
@@ -189,18 +185,23 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
 
       let statusEnvio: "ANTES" | "HOJE" | "ATRASADO" | null = null;
 
-      // 🟢 ALTERADO: Agora a régua cobre de forma ILIMITADA os dias em atraso.
-      // Enquanto o status for ABERTO ou ATRASADO e o vencimento estiver no passado, ele continua enviando.
+      // 🟢 CORREÇÃO CRÍTICA DAS REGRAS DE DISPARO E JANELAS CIVIS
       if (isSameDay(hoje, addDays(vencimentoPuro, -1))) {
-        statusEnvio = "ANTES";
+        // Bloqueia mensagens de aviso prévio (ANTES) para contratos Diários
+        if (contrato.periodicity !== "DAILY") {
+          statusEnvio = "ANTES";
+        }
       } else if (isSameDay(hoje, vencimentoPuro)) {
         statusEnvio = "HOJE";
-      } else if (vencimentoPuro < hoje) {
+      } else if (hoje > vencimentoPuro) { 
+        // 🟢 GARANTIA: 'hoje' precisa ser estritamente MAIOR que o vencimento. 
+        // Se o vencimento é hoje, 'hoje > vencimentoPuro' será falso. Só dispara no dia seguinte (D+1).
         statusEnvio = "ATRASADO";
       }
 
       if (!statusEnvio) continue;
 
+      // Se for execução da noite, apenas contratos diários recebem reforço
       if (isAfternoonRun && contrato.periodicity !== "DAILY") {
         continue;
       }
@@ -249,7 +250,6 @@ async function runGlobalTaxUpdate() {
 export const initCronJobs = () => {
   const TIMEZONE = "America/Sao_Paulo";
 
-  // Varredura de 15 em 15 minutos
   cron.schedule("*/2 * * * *", () => {
     checkAndNotifyContracts(false);
   }, {
