@@ -250,7 +250,7 @@ export const initCronJobs = () => {
   const TIMEZONE = "America/Sao_Paulo";
 
   // Varredura de 15 em 15 minutos
-  cron.schedule("*/15 * * * *", () => {
+  cron.schedule("*/2 * * * *", () => {
     checkAndNotifyContracts(false);
   }, {
     timezone: TIMEZONE,
