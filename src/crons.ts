@@ -246,11 +246,10 @@ async function runGlobalTaxUpdate() {
   }
 }
 
-// --- INICIALIZAÇÃO E AGENDAMENTOS DOS CRONS ---
 export const initCronJobs = () => {
   const TIMEZONE = "America/Sao_Paulo";
 
-  cron.schedule("*/2 * * * *", () => {
+  cron.schedule("0 8 * * *", () => {
     checkAndNotifyContracts(false);
   }, {
     timezone: TIMEZONE,
