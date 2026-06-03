@@ -289,7 +289,7 @@ export const initCronJobs = () => {
    * 🕒 UNICA ROTINA ATIVA: Executa a cada 15 minutos (ex: 08:00, 08:15, 08:30...)
    * Realiza a checagem e envio contínuo das mensagens automáticas mapeadas via banco.
    */
-  cron.schedule("*/2 * * * *", () => {
+  cron.schedule("*/15 * * * *", () => {
     checkAndNotifyContracts(false);
   }, {
     timezone: TIMEZONE,
