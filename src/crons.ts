@@ -5,26 +5,21 @@ import { prisma } from "./lib/prisma";
 import { ContractService } from "./services/contract.service";
 import { WhatsAppService } from "./services/whatsapp.service";
 
-// --- CONFIGURAÇÃO DE PRODUÇÃO ---
 const isTestMode = false;
 
-// --- FUNÇÃO AUXILIAR DE ESPERA (SLEEP) ---
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// --- FORMATADOR DE MOEDA ---
 const fmt = (v: any) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(typeof v === "object" && v.toNumber ? v.toNumber() : Number(v));
 
-// --- FORMATADOR DE DATA ---
 const fmtData = (dateInput: any) => {
   if (!dateInput) return "";
   return format(new Date(dateInput), "dd/MM/yyyy", { locale: ptBR });
 };
 
-// --- FUNÇÃO DE MONTAGEM E DISPARO DA NOTIFICAÇÃO ---
 async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJE" | "ATRASADO", turnoNoite: boolean = false): Promise<boolean> {
   const now = new Date();
   const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
@@ -36,9 +31,6 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
     ? [...contrato.installments].sort((a: any, b: any) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime())
     : [];
 
-  // ----------------------------------------------------
-  // LÓGICA: PLANO DIÁRIO (DAILY)
-  // ----------------------------------------------------
   if (contrato.periodicity === "DAILY") {
     if (statusEnvio === "ATRASADO" || turnoNoite) {
       const parcelasAtrasadasREAL = parcelasOrdenadas.filter((p: any) => {
@@ -82,12 +74,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
       }
       mensagem += `\nPara realizar o pagamento, solicite a chave PIX ou conta bancária.\n\nApós o pagamento, envie o comprovante.\n\nObrigado.`;
     }
-  }
-
-  // ----------------------------------------------------
-  // LÓGICA: PLANO SEMANAL (WEEKLY)
-  // ----------------------------------------------------
-  else if (contrato.periodicity === "WEEKLY" && !turnoNoite) {
+  } else if (contrato.periodicity === "WEEKLY" && !turnoNoite) {
     if (statusEnvio === "ATRASADO") {
       const parcelasAtrasadasREAL = parcelasOrdenadas.filter((p: any) => {
         const pVenc = new Date(p.dataVencimento);
@@ -124,12 +111,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
 
       mensagem = `Semanal ;\nBom dia, ${nomeCliente}, tudo bem?\n\nHoje vence a parcela semanal do seu contrato no valor de ${fmt(parcelaHoje?.valor || 0)}.\n\nResumo das próximas parcelas:\n\n• 2ª parcela: ${data2}\n• 3ª parcela: ${data3}\n• 4ª parcela: ${data4}\n\nPara pagamento, solicite a chave PIX ou conta.\n\nApós o pagamento, envie o comprovante.\n\nObrigado.`;
     }
-  }
-
-  // ----------------------------------------------------
-  // LÓGICA: PLANO MENSAL (MONTHLY)
-  // ----------------------------------------------------
-  else if (contrato.periodicity === "MONTHLY" && !turnoNoite) {
+  } else if (contrato.periodicity === "MONTHLY" && !turnoNoite) {
     const principal = Number(contrato.valorPrincipal);
     const percentualJuros = Number(contrato.jurosPercent);
     const jurosCiclo = principal * (percentualJuros / 100);
@@ -159,7 +141,6 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
   return false;
 }
 
-// --- ENGINE DA ROTINA DE VARREDURA AUTOMÁTICA ---
 async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
   const now = new Date();
   const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
@@ -185,23 +166,18 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
 
       let statusEnvio: "ANTES" | "HOJE" | "ATRASADO" | null = null;
 
-      // 🟢 CORREÇÃO CRÍTICA DAS REGRAS DE DISPARO E JANELAS CIVIS
       if (isSameDay(hoje, addDays(vencimentoPuro, -1))) {
-        // Bloqueia mensagens de aviso prévio (ANTES) para contratos Diários
         if (contrato.periodicity !== "DAILY") {
           statusEnvio = "ANTES";
         }
       } else if (isSameDay(hoje, vencimentoPuro)) {
         statusEnvio = "HOJE";
       } else if (hoje > vencimentoPuro) { 
-        // 🟢 GARANTIA: 'hoje' precisa ser estritamente MAIOR que o vencimento. 
-        // Se o vencimento é hoje, 'hoje > vencimentoPuro' será falso. Só dispara no dia seguinte (D+1).
         statusEnvio = "ATRASADO";
       }
 
       if (!statusEnvio) continue;
 
-      // Se for execução da noite, apenas contratos diários recebem reforço
       if (isAfternoonRun && contrato.periodicity !== "DAILY") {
         continue;
       }
@@ -228,7 +204,6 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
   }
 }
 
-// --- ATUALIZAÇÃO RECORRENTE DE TAXAS ---
 async function runGlobalTaxUpdate() {
   console.log("💰 [Cron Taxas] Aplicando taxas pendentes globais para usuários PRO...");
   try {
@@ -248,6 +223,12 @@ async function runGlobalTaxUpdate() {
 
 export const initCronJobs = () => {
   const TIMEZONE = "America/Sao_Paulo";
+
+  cron.schedule("0 0 * * *", () => {
+    runGlobalTaxUpdate();
+  }, {
+    timezone: TIMEZONE,
+  });
 
   cron.schedule("0 8 * * *", () => {
     checkAndNotifyContracts(false);
