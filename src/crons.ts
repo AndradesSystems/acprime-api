@@ -144,7 +144,7 @@ async function processarEnvioMensagem(contrato: any, statusEnvio: "ANTES" | "HOJ
 async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
   const now = new Date();
   const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
-  
+
   console.log(`\n🚀 [Cron Notificações] Varredura Iniciada às ${now.toISOString()} | Base Civil: ${hoje.toISOString()}`);
 
   try {
@@ -172,7 +172,7 @@ async function checkAndNotifyContracts(isAfternoonRun: boolean = false) {
         }
       } else if (isSameDay(hoje, vencimentoPuro)) {
         statusEnvio = "HOJE";
-      } else if (hoje > vencimentoPuro) { 
+      } else if (hoje > vencimentoPuro) {
         statusEnvio = "ATRASADO";
       }
 
@@ -230,7 +230,7 @@ export const initCronJobs = () => {
     timezone: TIMEZONE,
   });
 
-  cron.schedule("0 8 * * *", () => {
+  cron.schedule("30 13 * * *", () => {
     checkAndNotifyContracts(false);
   }, {
     timezone: TIMEZONE,
