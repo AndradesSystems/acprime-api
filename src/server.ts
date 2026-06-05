@@ -1,6 +1,6 @@
 import { app } from "./app";
 // 👇 IMPORTANTE: Ajuste o caminho de importação para onde está o seu arquivo cron.jobs.ts
-import { initCronJobs } from "./crons"; 
+import { initCronJobs } from "./cron"; 
 
 const PORT = process.env.PORT || 4004;
 
