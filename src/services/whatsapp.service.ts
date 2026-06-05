@@ -9,32 +9,25 @@ import makeWASocket, {
 import pino from 'pino';
 import { prisma } from '../lib/prisma';
 
-// Objeto global na memória para manter as sessões ativas e seus estados
+// Estado global das instâncias na memória
 const instanciasAtivas: { [key: string]: WASocket } = {};
-
-// Dicionário global para guardar os QR Codes em tempo real na memória para o Front buscar
 const qrCodesAtivos: { [key: string]: string } = {};
-
-// Dicionário para rastrear o status textual da conexão ('CONNECTING', 'OPEN', 'QRCODE', 'CLOSED')
 const statusConexoes: { [key: string]: 'CONNECTING' | 'OPEN' | 'QRCODE' | 'CLOSED' } = {};
-
-// Dicionário temporário na RAM para gerenciar as chaves dinâmicas do Baileys e evitar crashes em produção
 const estoqueChavesMemoria: { [userId: string]: { [type: string]: { [id: string]: any } } } = {};
+
+// 🔒 TRAVAS DE SEGURANÇA E FILAS POR USUÁRIO
+const promessasInicializacao: { [userId: string]: Promise<void> | null } = {};
+const filasDeEnvio: { [userId: string]: Array<{ toNumber: string; messageText: string; resolve: (v: boolean) => void; reject: (e: any) => void }> } = {};
+const processandoFila: { [userId: string]: boolean } = {};
 
 export class WhatsAppService {
 
     /**
-     * 🟢 ADAPTADOR DE ESTADO ALTERADO: Lê e grava as credenciais direto no banco de dados
-     * Armazena chaves dinâmicas na memória RAM para evitar erros 502 (Bad Gateway) em produção.
+     * Adaptador que gerencia as credenciais no banco e chaves na RAM
      */
-
     private static async usePrismaAuthState(userId: string): Promise<{ state: AuthenticationState, saveCreds: () => Promise<void> }> {
-        // 1. Busca a sessão atual no banco de dados
-        const sessao = await prisma.whatsappSession.findUnique({
-            where: { userId }
-        });
+        const sessao = await prisma.whatsappSession.findUnique({ where: { userId } });
 
-        // 2. Recupera e reconverte as credenciais do banco se existirem, caso contrário inicia do zero
         let creds = initAuthCreds();
         if (sessao?.sessionData) {
             try {
@@ -44,18 +37,15 @@ export class WhatsAppService {
             }
         }
 
-        // Garante que exista um espaço alocado na memória para as chaves deste usuário específico
         if (!estoqueChavesMemoria[userId]) {
             estoqueChavesMemoria[userId] = {};
         }
 
-        // Extração segura para o escopo do TypeScript
         const chavesDoUsuario = estoqueChavesMemoria[userId] as Record<string, any>;
 
         return {
             state: {
                 creds,
-                // 🟢 Gerenciamento seguro de chaves dinâmicas do Baileys para contas novas em deploy
                 keys: {
                     get: (type, ids) => {
                         const dados: { [id: string]: any } = {};
@@ -64,7 +54,7 @@ export class WhatsAppService {
                         }
                         return dados;
                     },
-                    set: (data: any) => { // ➔ Forçamos 'data' como 'any' aqui para permitir a indexação dinâmica por string
+                    set: (data: any) => {
                         for (const type in data) {
                             if (!chavesDoUsuario[type]) {
                                 chavesDoUsuario[type] = {};
@@ -74,7 +64,6 @@ export class WhatsAppService {
                     }
                 }
             },
-            // 3. Função acionada toda vez que o token muda (grava no banco em tempo real)
             saveCreds: async () => {
                 const sessionDataString = JSON.stringify(creds, BufferJSON.replacer);
                 await prisma.whatsappSession.update({
@@ -86,258 +75,266 @@ export class WhatsAppService {
     }
 
     /**
-     * 1. LIGA O MOTOR: Inicializa ou restabelece a conexão do Baileys para o usuário.
+     * LIGA O MOTOR: Inicializa o Baileys garantindo execução única por ID
      */
     static async conectarWhatsApp(userId: string): Promise<void> {
-        console.log(`\n==================================================`);
-        console.log(`🔍 [WhatsAppService] Iniciando motor para o ID: "${userId}"`);
-        console.log(`==================================================`);
+        if (promessasInicializacao[userId]) {
+            return promessasInicializacao[userId]!;
+        }
 
-        try {
-            statusConexoes[userId] = 'CONNECTING';
+        const promessa = (async () => {
+            console.log(`\n==================================================`);
+            console.log(`🔍 [WhatsAppService] Inicializando motor para o ID: "${userId}"`);
+            console.log(`==================================================`);
 
-            // Busca ou cria a sessão no banco garantindo a compatibilidade com o novo Schema
-            let sessao = await prisma.whatsappSession.findUnique({
-                where: { userId },
-                include: { user: true }
-            });
+            try {
+                statusConexoes[userId] = 'CONNECTING';
 
-            if (!sessao) {
-                console.log(`⚠️ Sessão não encontrada. Criando registro automático no banco...`);
-                const pastaPadrao = `auth_${userId}`;
-                sessao = await prisma.whatsappSession.create({
-                    data: {
-                        userId,
-                        pastaAuth: pastaPadrao,
-                        status: 'CONNECTING'
-                    },
+                let sessao = await prisma.whatsappSession.findUnique({
+                    where: { userId },
                     include: { user: true }
                 });
-            }
 
-            const nomeUsuario = sessao.user?.nome || "Usuário";
-            const { pastaAuth } = sessao;
-
-            // Evita duplicar conexão se o socket já estiver ativo na RAM
-            if (instanciasAtivas[pastaAuth]) {
-                console.log(`➔ [${nomeUsuario}] WhatsApp já está ativo na memória.`);
-                statusConexoes[userId] = 'OPEN';
-                return;
-            }
-
-            // Lê o estado estruturado direto do PostgreSQL / RAM
-            const { state, saveCreds } = await this.usePrismaAuthState(userId);
-
-            // Cria o Socket do Baileys
-            const sock = makeWASocket({
-                auth: state,
-                logger: pino({ level: 'silent' }),
-                printQRInTerminal: false
-            });
-
-            // Salva a instância na memória RAM global
-            instanciasAtivas[pastaAuth] = sock;
-
-            // Escuta as atualizações de conexão
-            sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
-                const { connection, lastDisconnect, qr } = update;
-
-                if (qr) {
-                    console.log(`✨ [QR CODE] Novo código gerado para o usuário: ${nomeUsuario}`);
-                    qrCodesAtivos[userId] = qr;
-                    statusConexoes[userId] = 'QRCODE';
-
-                    await prisma.whatsappSession.update({
-                        where: { userId },
-                        data: { status: 'QRCODE' }
+                if (!sessao) {
+                    const pastaPadrao = `auth_${userId}`;
+                    sessao = await prisma.whatsappSession.create({
+                        data: { userId, pastaAuth: pastaPadrao, status: 'CONNECTING' },
+                        include: { user: true }
                     });
                 }
 
-                if (connection === 'close') {
-                    const erroStatusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-                    const deveReconectar = erroStatusCode !== DisconnectReason.loggedOut && erroStatusCode !== 403;
+                const nomeUsuario = sessao.user?.nome || "Usuário";
+                const { pastaAuth } = sessao;
 
-                    console.log(`\n❌ [CONEXÃO] [${nomeUsuario}] Conexão fechada. Status: ${erroStatusCode}`);
-                    statusConexoes[userId] = 'CLOSED';
-
-                    // Atualiza o status no banco de dados
-                    await prisma.whatsappSession.update({
-                        where: { userId },
-                        data: { status: 'CLOSED' }
-                    });
-
-                    // Se foi o próprio usuário que desconectou pelo celular, limpa o token do banco
-                    if (erroStatusCode === DisconnectReason.loggedOut) {
-                        console.log(`🗑️ [${nomeUsuario}] Desconectado pelo celular. Limpando chaves do banco...`);
-                        await prisma.whatsappSession.update({
-                            where: { userId },
-                            data: { sessionData: null }
-                        });
-                        delete estoqueChavesMemoria[userId]; // Limpa chaves da RAM
-                    }
-
-                    // Limpa rastros da memória
-                    delete instanciasAtivas[pastaAuth];
-                    delete qrCodesAtivos[userId];
-
-                    if (deveReconectar) {
-                        console.log(`⏳ Reconectando automaticamente em 5 segundos...`);
-                        setTimeout(() => this.conectarWhatsApp(userId), 5000);
-                    }
-                }
-                else if (connection === 'open') {
-                    console.log(`\n✅ [${nomeUsuario}] WHATSAPP CONECTADO COM SUCESSO!`);
+                if (instanciasAtivas[pastaAuth]) {
+                    console.log(`➔ [${nomeUsuario}] Instância ativa detectada na RAM.`);
                     statusConexoes[userId] = 'OPEN';
-                    delete qrCodesAtivos[userId];
-
-                    // Salva o status de conectado no banco de dados
-                    await prisma.whatsappSession.update({
-                        where: { userId },
-                        data: { status: 'OPEN' }
-                    });
+                    return;
                 }
-            });
 
-            // Escuta a geração de novas chaves e salva diretamente no PostgreSQL
-            sock.ev.on('creds.update', saveCreds);
+                const { state, saveCreds } = await this.usePrismaAuthState(userId);
 
-        } catch (error) {
-            statusConexoes[userId] = 'CLOSED';
-            console.error(`💥 Erro crítico no motor do WhatsApp para o usuário ${userId}:`, error);
+                const sock = makeWASocket({
+                    auth: state,
+                    logger: pino({ level: 'silent' }),
+                    printQRInTerminal: false
+                });
+
+                instanciasAtivas[pastaAuth] = sock;
+
+                sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
+                    const { connection, lastDisconnect, qr } = update;
+
+                    if (qr) {
+                        console.log(`✨ [QR CODE] Código gerado para: ${nomeUsuario}`);
+                        qrCodesAtivos[userId] = qr;
+                        statusConexoes[userId] = 'QRCODE';
+                        await prisma.whatsappSession.update({ where: { userId }, data: { status: 'QRCODE' } });
+                    }
+
+                    if (connection === 'close') {
+                        const erroStatusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+                        const deveReconectar = erroStatusCode !== DisconnectReason.loggedOut && erroStatusCode !== 403;
+
+                        console.log(`❌ [CONEXÃO] [${nomeUsuario}] Socket fechado. Status: ${erroStatusCode}`);
+                        statusConexoes[userId] = 'CLOSED';
+                        await prisma.whatsappSession.update({ where: { userId }, data: { status: 'CLOSED' } });
+
+                        if (erroStatusCode === DisconnectReason.loggedOut) {
+                            console.log(`🗑️ [${nomeUsuario}] Desconectado via celular. Limpando credenciais...`);
+                            await prisma.whatsappSession.update({ where: { userId }, data: { sessionData: null } });
+                            delete estoqueChavesMemoria[userId];
+                        }
+
+                        delete instanciasAtivas[pastaAuth];
+                        delete qrCodesAtivos[userId];
+
+                        if (deveReconectar) {
+                            console.log(`⏳ Agendando reconexão automática para ${nomeUsuario} em 5s...`);
+                            setTimeout(() => this.conectarWhatsApp(userId), 5000);
+                        }
+                    }
+                    else if (connection === 'open') {
+                        console.log(`✅ [${nomeUsuario}] WHATSAPP CONECTADO COM SUCESSO!`);
+                        statusConexoes[userId] = 'OPEN';
+                        delete qrCodesAtivos[userId];
+                        await prisma.whatsappSession.update({ where: { userId }, data: { status: 'OPEN' } });
+                        
+                        // Executa a fila de mensagens represadas se houver
+                        this.processarFilaInterna(userId);
+                    }
+                });
+
+                sock.ev.on('creds.update', saveCreds);
+
+            } catch (error) {
+                statusConexoes[userId] = 'CLOSED';
+                console.error(`💥 Erro crítico no motor do usuário ${userId}:`, error);
+            }
+        })();
+
+        promessasInicializacao[userId] = promessa;
+
+        try {
+            await promessa;
+        } finally {
+            promessasInicializacao[userId] = null;
         }
     }
 
     /**
-     * 2. BUSCA O STATUS E O QR CODE ATUAL (Para o seu Front-end bater via GET)
+     * ENTRADA DA FILA: Ponto centralizado de disparo de mensagens
+     */
+    static async sendMessage(userId: string, toNumber: string, messageText: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            if (!filasDeEnvio[userId]) {
+                filasDeEnvio[userId] = [];
+            }
+
+            // Adiciona o pedido de envio na fila exclusiva do usuário
+            filasDeEnvio[userId].push({ toNumber, messageText, resolve, reject });
+
+            // Dispara o gatilho de execução da fila
+            this.processarFilaInterna(userId);
+        });
+    }
+
+    /**
+     * MÁQUINA DE ESTADO DA FILA: Processa uma mensagem por vez para evitar Bloqueios e Atropelos
+     */
+    private static async processarFilaInterna(userId: string): Promise<void> {
+        // Se já tiver uma mensagem sendo enviada por essa fila, sai e aguarda sua vez
+        if (processandoFila[userId] || !filasDeEnvio[userId] || filasDeEnvio[userId].length === 0) {
+            return;
+        }
+
+        processandoFila[userId] = true;
+
+        const sessao = await prisma.whatsappSession.findUnique({ where: { userId } });
+        const pastaAuth = sessao?.pastaAuth || `auth_${userId}`;
+
+        // Loop enquanto houver mensagens pendentes na fila do usuário
+        while (filasDeEnvio[userId] && filasDeEnvio[userId].length > 0) {
+            // 💡 Captura e remove o primeiro elemento da fila de forma segura
+            const tarefa = filasDeEnvio[userId].shift(); 
+
+            // Se por algum motivo a tarefa for indefinida, ignora e continua o loop
+            if (!tarefa) {
+                continue;
+            }
+
+            try {
+                // 1. Se a instância caiu da RAM, liga o motor e segura a fila
+                if (!instanciasAtivas[pastaAuth]) {
+                    console.log(`⚠️ [Fila] Instância de ${userId} fora da RAM. Inicializando motor antes de processar a fila...`);
+                    
+                    // Re-insere a tarefa no início da fila para não perdê-la
+                    filasDeEnvio[userId].unshift(tarefa);
+                    
+                    await this.conectarWhatsApp(userId);
+
+                    let tentativas = 0;
+                    while (statusConexoes[userId] !== 'OPEN' && tentativas < 40) {
+                        if (statusConexoes[userId] === 'QRCODE' || statusConexoes[userId] === 'CLOSED') {
+                            throw new Error(`Conexão indisponível para envio. Status atual: ${statusConexoes[userId]}`);
+                        }
+                        await new Promise((r) => setTimeout(r, 500));
+                        tentativas++;
+                    }
+                    
+                    // Remove novamente a tarefa do topo da fila agora que o motor ligou
+                    filasDeEnvio[userId].shift();
+                }
+
+                const clientSock = instanciasAtivas[pastaAuth];
+                if (!clientSock || statusConexoes[userId] !== 'OPEN') {
+                    throw new Error('Não foi possível estabelecer uma conexão estável.');
+                }
+
+                const apenasNumeros = tarefa.toNumber.replace(/\D/g, '');
+                if (!apenasNumeros) throw new Error('Número de destino inválido.');
+
+                console.log(`📡 [Fila] Verificando existência de JID para: ${apenasNumeros}`);
+                const [resultado] = (await clientSock.onWhatsApp(apenasNumeros)) || [];
+
+                if (!resultado || !resultado.exists) {
+                    throw new Error('Este número não possui uma conta de WhatsApp ativa.');
+                }
+
+                // Dispara a mensagem de fato
+                await clientSock.sendMessage(resultado.jid, { text: tarefa.messageText });
+                console.log(`✅ [Fila] Mensagem enviada com sucesso para o JID: ${resultado.jid}`);
+                
+                tarefa.resolve(true); // Resolve a Promise de quem chamou lá no Cron
+
+                // 🌟 ANTI-BAN: Pausa humana obrigatória entre mensagens DO MESMO CHIP (2 a 5 segundos)
+                const delayAntiBan = Math.floor(Math.random() * (5000 - 2000 + 1) + 2000);
+                console.log(`💤 [Anti-Ban] Aguardando ${delayAntiBan / 1000}s antes da próxima mensagem deste usuário...`);
+                await new Promise((r) => setTimeout(r, delayAntiBan));
+
+            } catch (error: any) {
+                console.error(`❌ [Fila] Erro ao processar mensagem para ${tarefa.toNumber}:`, error.message || error);
+                tarefa.reject(error); // Avisa o Cron que essa falhou
+            }
+        }
+
+        // Fila processada por completo, libera a trava
+        processandoFila[userId] = false;
+    }
+
+    /**
+     * Busca o Status e o QR Code atualizado
      */
     static async getStatus(userId: string) {
         const sessao = await prisma.whatsappSession.findUnique({ where: { userId } });
         const pastaAuth = sessao?.pastaAuth || `auth_${userId}`;
-
         const estaNaRam = !!instanciasAtivas[pastaAuth];
-        // Sincroniza o status vindo da RAM ou do banco
         const statusAtual = statusConexoes[userId] || sessao?.status || (estaNaRam ? 'OPEN' : 'CLOSED');
-        const qrCodeString = qrCodesAtivos[userId] || null;
-
         return {
             userId,
             status: statusAtual,
-            qrCode: qrCodeString,
+            qrCode: qrCodesAtivos[userId] || null,
             conectado: statusAtual === 'OPEN'
         };
     }
 
     /**
-       * 3. DISPARA MENSAGEM (Sua rota POST de envio vai chamar este método)
-       */
-    static async sendMessage(userId: string, toNumber: string, messageText: string): Promise<boolean> {
-        console.log(`\n✉️ [Disparo] Tentando enviar mensagem para o número: ${toNumber}`);
-        console.log(`✉️ [Disparo] Tentando enviar mensagem para o USERID: ${userId}`);
-
-        try {
-            const sessao = await prisma.whatsappSession.findUnique({
-                where: { userId }
-            });
-
-            if (!sessao) {
-                throw new Error('Usuário não possui registro de sessão configurado no banco.');
-            }
-
-            const { pastaAuth } = sessao;
-            let clientSock = instanciasAtivas[pastaAuth];
-
-            // 💡 RECONEXÃO AUTOMÁTICA EM TEMPO DE EXECUÇÃO:
-            // Se o banco diz que tá conectado, mas a RAM limpou, a gente liga o motor na hora!
-            if (!clientSock) {
-                console.log(`⚠️ [Memória RAM] Instância de ${userId} não encontrada na RAM. Inicializando motor de conexões...`);
-                await this.conectarWhatsApp(userId);
-
-                // Aguarda um breve instante para o socket ser atribuído à variável global
-                await new Promise((resolve) => setTimeout(resolve, 2500));
-                clientSock = instanciasAtivas[pastaAuth];
-            }
-
-            // Se mesmo tentando ligar o motor ele não subir, aí sim barramos.
-            if (!clientSock) {
-                throw new Error('O WhatsApp deste usuário não pôde ser inicializado na memória ativa.');
-            }
-
-            // Remove tudo o que não for número
-            const apenasNumeros = toNumber.replace(/\D/g, '');
-            if (!apenasNumeros) {
-                throw new Error('O número fornecido é inválido.');
-            }
-
-            console.log(`📡 [DEBUG-DISPARO] Verificando existência e formato do JID para: ${apenasNumeros}...`);
-            const [resultadoValidacao] = (await clientSock.onWhatsApp(apenasNumeros)) || [];
-
-            if (!resultadoValidacao || !resultadoValidacao.exists) {
-                throw new Error('Este número não possui uma conta de WhatsApp ativa.');
-            }
-
-            const jidReal = resultadoValidacao.jid;
-
-            // Dispara o texto
-            await clientSock.sendMessage(jidReal, { text: messageText });
-            console.log(`✅ Mensagem enviada com sucesso para o JID: ${jidReal}`);
-            return true;
-
-        } catch (error: any) {
-            console.error(`❌ Falha no envio da mensagem para o usuário ${userId}:`, error.message || error);
-            throw error;
-        }
-    }
-
-    /**
-     * 4. DESCONECTA O WHATSAPP: Encerra a sessão atual e limpa os dados do banco de dados.
+     * Encerra a sessão atual de forma limpa
      */
     static async desconectarWhatsApp(userId: string): Promise<boolean> {
         console.log(`\n📴 [WhatsAppService] Solicitando desconexão para o usuário: "${userId}"`);
-
         try {
-            // 1. Busca os dados da sessão no banco de dados
-            const sessao = await prisma.whatsappSession.findUnique({
-                where: { userId }
-            });
-
-            if (!sessao) {
-                throw new Error('Sessão não encontrada no banco de dados.');
-            }
+            const sessao = await prisma.whatsappSession.findUnique({ where: { userId } });
+            if (!sessao) throw new Error('Sessão não encontrada no banco de dados.');
 
             const { pastaAuth } = sessao;
             const clientSock = instanciasAtivas[pastaAuth];
 
-            // 2. Se a instância estiver rodando na memória RAM, desconecta o socket nativamente
             if (clientSock) {
                 try {
-                    console.log(`➔ Encerrando socket ativo na memória para [${pastaAuth}]...`);
                     await clientSock.logout();
                     clientSock.end(undefined);
                 } catch (err) {
-                    console.log(`⚠️ Aviso ao fechar socket (pode ser que já estivesse offline):`, err);
+                    console.log(`⚠️ Aviso ao fechar socket:`, err);
                 }
             }
 
-            // 3. Limpa as variáveis globais de cache na memória RAM
             delete instanciasAtivas[pastaAuth];
             delete qrCodesAtivos[userId];
-            delete estoqueChavesMemoria[userId]; // Limpa o repositório de chaves dinâmicas
+            delete estoqueChavesMemoria[userId];
+            delete filasDeEnvio[userId];
+            delete processandoFila[userId]; // Limpa a trava da fila também
             statusConexoes[userId] = 'CLOSED';
 
-            // 4. Reseta as informações no banco de dados PostgreSQL
             await prisma.whatsappSession.update({
                 where: { userId },
-                data: {
-                    sessionData: null,  // Apaga as chaves criptográficas antigas
-                    status: 'CLOSED'    // Define o status como fechado
-                }
+                data: { sessionData: null, status: 'CLOSED' }
             });
 
-            console.log(`✅ [${pastaAuth}] Desconectado e limpo com sucesso!`);
+            console.log(`✅ [${pastaAuth}] Instância limpa e desconectada com sucesso.`);
             return true;
-
         } catch (error: any) {
-            console.error(`❌ Erro ao desconectar o WhatsApp do usuário ${userId}:`, error.message || error);
+            console.error(`❌ Erro ao desconectar usuário ${userId}:`, error.message || error);
             throw error;
         }
     }

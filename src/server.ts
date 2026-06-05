@@ -1,8 +1,10 @@
 import { app } from "./app";
 // 👇 IMPORTANTE: Ajuste o caminho de importação para onde está o seu arquivo cron.jobs.ts
 import { initCronJobs } from "./cron"; 
+import { prisma } from "./lib/prisma";
 
 const PORT = process.env.PORT || 4004;
+
 
 app.listen(PORT, async () => {
   console.log(`\n==================================================`);

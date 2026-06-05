@@ -8,6 +8,17 @@ import { WeeklyNotificationService } from "./WeeklyNotificationService";
 import { MonthlyNotificationService } from "./MonthlyNotificationService";
 
 /**
+ * Função utilitária para gerar um delay assíncrono aleatório
+ * @param min Segundos mínimos
+ * @param max Segundos máximos
+ */
+const delayAleatorio = (min: number, max: number): Promise<void> => {
+  const ms = Math.floor(Math.random() * (max - min + 1) + min) * 1000;
+  console.log(`⏳ [Cron Flow] Aguardando uma pausa estratégica de ${(ms / 1000).toFixed(1)} segundos para evitar bloqueio...`);
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+/**
  * Aplica taxas pendentes globais para usuários PRO à meia-noite.
  */
 async function runGlobalTaxUpdate(): Promise<void> {
@@ -28,33 +39,63 @@ async function runGlobalTaxUpdate(): Promise<void> {
 }
 
 /**
+ * Executa todas as rotinas de notificação em uma fila indiana rígida (sequencial)
+ * com espaçamento aleatório de segurança entre cada módulo.
+ */
+async function runSequentialNotifications(): Promise<void> {
+  console.log("\n⚡ [Cron Flow] Iniciando a esteira sequencial de notificações...");
+
+  // 1. Executa a rotina Diária
+  try {
+    await DailyNotificationService.execute();
+  } catch (err: any) {
+    console.error("❌ Erro ao rodar DailyNotificationService:", err.message);
+  }
+
+  // Pausa segura de 5 a 30 segundos antes do próximo serviço
+  await delayAleatorio(5, 30);
+
+  // 2. Executa a rotina Semanal
+  try {
+    await WeeklyNotificationService.execute();
+  } catch (err: any) {
+    console.error("❌ Erro ao rodar WeeklyNotificationService:", err.message);
+  }
+
+  // Outra pausa segura de 5 a 30 segundos antes do próximo serviço
+  await delayAleatorio(5, 30);
+
+  // 3. Executa a rotina Mensal
+  try {
+    await MonthlyNotificationService.execute();
+  } catch (err: any) {
+    console.error("❌ Erro ao rodar MonthlyNotificationService:", err.message);
+  }
+
+  console.log("🏁 [Cron Flow] Todas as rotinas de notificações do ciclo foram concluídas!\n");
+}
+
+/**
  * Inicializa todos os agendamentos do sistema (Robô Andrade).
- * Configurado para disparar notificações às 22:10 para a fase de testes.
+ * Configurado para disparar notificações a cada 30 minutos de forma contínua.
  */
 export const initCronJobs = (): void => {
   const TIMEZONE = "America/Sao_Paulo";
-  const HORARIO_TESTE = "15 22 * * *"; // Executa às 22:10 diariamente
+  
+  // 🧭 "*/30" no primeiro campo significa: execute a cada minuto divisível por 30 (0 e 30)
+  const INTERVALO_30_MINUTOS = "*/30 * * * *"; 
 
   // 1. Atualização Monetária de Taxas (Diário - Meia-noite)
   cron.schedule("0 0 * * *", () => {
     runGlobalTaxUpdate();
   }, { timezone: TIMEZONE });
 
-  // 2. Disparo do Fluxo de Contratos Diários
-  cron.schedule(HORARIO_TESTE, () => {
-    DailyNotificationService.execute();
-  }, { timezone: TIMEZONE });
-
-  // 3. Disparo do Fluxo de Contratos Semanais
-  cron.schedule(HORARIO_TESTE, () => {
-    WeeklyNotificationService.execute();
-  }, { timezone: TIMEZONE });
-
-  // 4. Disparo do Fluxo de Contratos Mensais
-  cron.schedule(HORARIO_TESTE, () => {
-    MonthlyNotificationService.execute();
+  // 2. Disparador Central Unificado de Notificações (A cada 30 minutos)
+  // Evita que as funções rodem simultaneamente no mesmo segundo do node-cron
+  cron.schedule(INTERVALO_30_MINUTOS, () => {
+    runSequentialNotifications();
   }, { timezone: TIMEZONE });
 
   console.log(`🚀 [MÓDULO CRON] Inicializado com sucesso.`);
-  console.log(`🎛️  Rotinas de notificação independentes agendadas para às 22:15 (${TIMEZONE}).`);
+  console.log(`🎛️  Rotina de esteira sequencial agendada para rodar a cada 30 minutos (${TIMEZONE}).`);
 };

@@ -125,9 +125,9 @@ export class ContractService {
     }
   }
 
-  /* =========================================================
-            ✅ CRIAÇÃO (CREATE)
-          ========================================================= */
+/* =========================================================
+     ✅ CRIAÇÃO (CREATE) - AJUSTADO PARA MEIA-NOITE UTC
+  ========================================================= */
   static async create(data: {
     clientId: string;
     userId: string;
@@ -137,10 +137,11 @@ export class ContractService {
     periodicity: ContractPeriodicity;
     dataInicio?: string;
   }) {
+    // Força a data de referência a iniciar estritamente na meia-noite UTC
     const dataRef = data.dataInicio ? new Date(data.dataInicio) : new Date();
 
     const baseDate = new Date(
-      Date.UTC(dataRef.getUTCFullYear(), dataRef.getUTCMonth(), dataRef.getUTCDate(), 12, 0, 0)
+      Date.UTC(dataRef.getUTCFullYear(), dataRef.getUTCMonth(), dataRef.getUTCDate(), 0, 0, 0)
     );
 
     let contractData: any = {
@@ -185,7 +186,7 @@ export class ContractService {
           numeroParcela: i + 1,
           valor: valorParcela,
           taxa: 0,
-          dataVencimento: vencimentoParcela,
+          dataVencimento: vencimentoParcela, // Já herda as 00:00:00 UTC da baseDate
           status: "PENDENTE",
         });
       }
@@ -201,7 +202,6 @@ export class ContractService {
 
     // Executa a transação incluindo o plano do usuário no retorno final
     const contratoCriado = await prisma.$transaction(async (tx) => {
-      // 1. Busca os dados do usuário atual (incluindo o plano)
       const user = await tx.user.findUnique({
         where: { id: data.userId },
       });
@@ -210,7 +210,6 @@ export class ContractService {
         throw new AppError("Usuário não encontrado.", 404);
       }
 
-      // 🔴 TRAVA DE LIMITE PARA PLANO VAZIO
       if (user.plan === "VAZIO") {
         const contratosAtivosCount = await tx.contract.count({
           where: {
@@ -227,14 +226,12 @@ export class ContractService {
         }
       }
 
-      // 2. Verificação de Saldo Operacional
       const saldoDisponivel = Number(user.saldoOperacional || 0);
 
       if (saldoDisponivel < data.valorPrincipal) {
         throw new AppError("Saldo insuficiente em caixa.", 400);
       }
 
-      // 3. Deduz o valor do caixa operacional
       await tx.user.update({
         where: { id: data.userId },
         data: {
@@ -242,13 +239,11 @@ export class ContractService {
         },
       });
 
-      // 4. Efetua a criação do novo contrato
       const novoContrato = await tx.contract.create({
         data: contractData,
         include: { client: true },
       });
 
-      // 🟢 Injeta temporariamente o plano do usuário para usarmos na checagem do WhatsApp abaixo
       return {
         ...novoContrato,
         userPlan: user.plan,
@@ -264,14 +259,15 @@ export class ContractService {
           const formatarMoeda = (v: number) =>
             new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-          const formatarData = (d: Date) =>
-            new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(d);
+          // Alterado para garantir que exiba a data correta no fuso local mesmo vindo zerada em UTC
+          const formatarData = (d: Date) => {
+            return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
+          };
 
           const principal = Number(contratoCriado.valorPrincipal);
           const jurosPercent = Number(contratoCriado.jurosPercent);
           const totalEmAberto = Number(contratoCriado.valorEmAberto);
 
-          // Cálculos específicos para os templates
           const jurosDoMes = principal * (jurosPercent / 100);
           const numParcelas = contratoCriado.periodicity === "DAILY" ? 20 : 4;
           const valorParcelaCalculada = totalEmAberto / numParcelas;
@@ -287,7 +283,6 @@ export class ContractService {
             dataVencimento: formatarData(new Date(contratoCriado.vencimentoEm)),
           };
 
-          // Executa a função do template dinamicamente usando a periodicidade recebida
           const builder = ContractTemplates[contratoCriado.periodicity];
           if (!builder) {
             throw new Error(`Template não encontrado para a periodicidade: ${contratoCriado.periodicity}`);
