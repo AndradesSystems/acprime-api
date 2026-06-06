@@ -39,20 +39,19 @@ async function runGlobalTaxUpdate(): Promise<void> {
 }
 
 /**
- * Executa todas as rotinas de notificação em uma fila indiana rígida (sequencial)
- * com espaçamento aleatório de segurança entre cada módulo.
+ * ESTEIRA DA MANHÃ (08:00)
+ * Executa Diário, Semanal e Mensal sequencialmente.
  */
-async function runSequentialNotifications(): Promise<void> {
-  console.log("\n⚡ [Cron Flow] Iniciando a esteira sequencial de notificações...");
+async function runMorningNotifications(): Promise<void> {
+  console.log("\n☀️ [Cron Flow] Iniciando a esteira sequencial da MANHÃ (08:00)...");
 
   // 1. Executa a rotina Diária
   try {
     await DailyNotificationService.execute();
   } catch (err: any) {
-    console.error("❌ Erro ao rodar DailyNotificationService:", err.message);
+    console.error("❌ Erro ao rodar DailyNotificationService (Manhã):", err.message);
   }
 
-  // Pausa segura de 5 a 30 segundos antes do próximo serviço
   await delayAleatorio(5, 30);
 
   // 2. Executa a rotina Semanal
@@ -62,7 +61,6 @@ async function runSequentialNotifications(): Promise<void> {
     console.error("❌ Erro ao rodar WeeklyNotificationService:", err.message);
   }
 
-  // Outra pausa segura de 5 a 30 segundos antes do próximo serviço
   await delayAleatorio(5, 30);
 
   // 3. Executa a rotina Mensal
@@ -72,30 +70,47 @@ async function runSequentialNotifications(): Promise<void> {
     console.error("❌ Erro ao rodar MonthlyNotificationService:", err.message);
   }
 
-  console.log("🏁 [Cron Flow] Todas as rotinas de notificações do ciclo foram concluídas!\n");
+  console.log("🏁 [Cron Flow] Todas as rotinas da manhã foram concluídas!\n");
+}
+
+/**
+ * ESTEIRA DA NOITE (20:00)
+ * Executa APENAS a rotina Diária.
+ */
+async function runEveningNotifications(): Promise<void> {
+  console.log("\n🌙 [Cron Flow] Iniciando a esteira da NOITE (20:00)...");
+
+  // Executa APENAS a rotina Diária
+  try {
+    await DailyNotificationService.execute();
+  } catch (err: any) {
+    console.error("❌ Erro ao rodar DailyNotificationService (Noite):", err.message);
+  }
+
+  console.log("🏁 [Cron Flow] Rotina diária da noite concluída!\n");
 }
 
 /**
  * Inicializa todos os agendamentos do sistema (Robô Andrade).
- * Configurado para disparar notificações a cada 30 minutos de forma contínua.
  */
 export const initCronJobs = (): void => {
   const TIMEZONE = "America/Sao_Paulo";
-  
-  // 🧭 "*/30" no primeiro campo significa: execute a cada minuto divisível por 30 (0 e 30)
-  const INTERVALO_30_MINUTOS = "*/30 * * * *"; 
 
   // 1. Atualização Monetária de Taxas (Diário - Meia-noite)
   cron.schedule("0 0 * * *", () => {
     runGlobalTaxUpdate();
   }, { timezone: TIMEZONE });
 
-  // 2. Disparador Central Unificado de Notificações (A cada 30 minutos)
-  // Evita que as funções rodem simultaneamente no mesmo segundo do node-cron
-  cron.schedule(INTERVALO_30_MINUTOS, () => {
-    runSequentialNotifications();
+  // 2. Disparador da Manhã - 08:00 (Roda Diário, Semanal e Mensal)
+  cron.schedule("0 8 * * *", () => {
+    runMorningNotifications();
+  }, { timezone: TIMEZONE });
+
+  // 3. Disparador da Noite - 20:00 (Roda APENAS Diário)
+  cron.schedule("0 20 * * *", () => {
+    runEveningNotifications();
   }, { timezone: TIMEZONE });
 
   console.log(`🚀 [MÓDULO CRON] Inicializado com sucesso.`);
-  console.log(`🎛️  Rotina de esteira sequencial agendada para rodar a cada 30 minutos (${TIMEZONE}).`);
+  console.log(`🎛️  Configurado para disparos às 08:00 (Geral) e às 20:00 (Apenas Diário) no fuso ${TIMEZONE}.`);
 };
