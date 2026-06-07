@@ -5,21 +5,27 @@ import { WhatsAppService } from "./whatsapp.service";
 import { ContractTemplates } from "../templates/contract-messages.template";
 
 export class ContractService {
-  /* =========================================================
-          🛡️ APLICAÇÃO DE TAXAS (CORREÇÃO TAXA DIÁRIA NO MENSAL)
-          - Lógica de "Calendar Day" via UTC Corrigida para fuso local.
-          - Taxa mensal aplicada por DIA de atraso (sem dividir por 30).
-          - Filtro estrito: Apenas status ABERTO e ATRASADO geram taxas.
-       ========================================================= */
   static async applyPendingTaxes(userId: string) {
     console.log(`\n🚀 [TAX_ENGINE] Iniciando verificação de taxas para o usuário: ${userId}`);
     try {
       const now = new Date();
 
-      // 🟢 CORREÇÃO: Captura Ano, Mês e Dia locais (Brasil) e gera o UTC zerado.
-      // Isso evita que o motor "ande um dia para frente" quando passa das 21:00h.
-      const hoje = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
-      console.log(`📅 [TAX_ENGINE] Data base 'Hoje' (Alinhada com fuso local): ${hoje.toISOString()}`);
+      // 🔥 CORREÇÃO BULLETPROOF: Extrai ano, mês e dia convertidos para o fuso do Brasil
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+
+      const parts = formatter.formatToParts(now);
+      const year = Number(parts.find(p => p.type === "year")?.value);
+      const month = Number(parts.find(p => p.type === "month")?.value);
+      const day = Number(parts.find(p => p.type === "day")?.value);
+
+      // Agora sim: Um UTC puríssimo cravado na meia-noite do dia atual do Brasil
+      const hoje = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      console.log(`📅 [TAX_ENGINE] Data base 'Hoje' (Garantida Brasil/UTC): ${hoje.toISOString()}`);
 
       const [taxasConfig, contratos] = await Promise.all([
         prisma.taxa.findMany(),
@@ -47,17 +53,17 @@ export class ContractService {
 
         let novaSomaTaxas = 0;
         const v = new Date(contrato.vencimentoEm);
-        console.log("contrato vence em: " + v);
 
         if (contrato.periodicity === "MONTHLY") {
           const valorConfig = configMap.get("MONTHLY") || 0;
           console.log(`   [MONTHLY] Valor da taxa por dia de atraso: ${valorConfig}`);
 
           if (valorConfig > 0) {
+            // Como v já vem como "2026-06-07T00:00:00.000Z", usamos os métodos UTC para isolar a data pura
             const vencimentoPuro = new Date(Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), 0, 0, 0));
             console.log(`   [MONTHLY] Vencimento do contrato (UTC): ${vencimentoPuro.toISOString()}`);
 
-            // Só aplica se o dia do vencimento já passou em relação ao dia de hoje local
+            // Se o vencimento for menor que hoje, significa que o dia de pagar já passou (ex: Venceu dia 06 e hoje é 07)
             if (vencimentoPuro < hoje) {
               const diffTime = hoje.getTime() - vencimentoPuro.getTime();
               const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -72,6 +78,7 @@ export class ContractService {
             }
           }
         } else {
+          // Bloco Diário / Semanal (Baseado em Parcelas)
           const valorMultaDiaria = configMap.get(contrato.periodicity) || 0;
           console.log(`   [${contrato.periodicity}] Valor da multa diária: ${valorMultaDiaria} | Parcelas pendentes: ${contrato.installments.length}`);
 
@@ -80,7 +87,6 @@ export class ContractService {
             const vi = new Date(inst.dataVencimento);
             const vencInstPuro = new Date(Date.UTC(vi.getUTCFullYear(), vi.getUTCMonth(), vi.getUTCDate(), 0, 0, 0));
 
-            // Só aplica se o dia do vencimento da parcela for estritamente menor que o dia de hoje
             if (vencInstPuro < hoje && valorMultaDiaria > 0) {
               const diffTime = hoje.getTime() - vencInstPuro.getTime();
               const dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -125,9 +131,9 @@ export class ContractService {
     }
   }
 
-/* =========================================================
-     ✅ CRIAÇÃO (CREATE) - AJUSTADO PARA MEIA-NOITE UTC
-  ========================================================= */
+  /* =========================================================
+       ✅ CRIAÇÃO (CREATE) - AJUSTADO PARA MEIA-NOITE UTC
+    ========================================================= */
   static async create(data: {
     clientId: string;
     userId: string;
