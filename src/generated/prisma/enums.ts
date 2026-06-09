@@ -33,7 +33,8 @@ export type ContractStatus = (typeof ContractStatus)[keyof typeof ContractStatus
 export const PaymentType = {
   JUROS: 'JUROS',
   PRINCIPAL: 'PRINCIPAL',
-  MISTO: 'MISTO'
+  MISTO: 'MISTO',
+  PERSONALIZADO: 'PERSONALIZADO'
 } as const
 
 export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType]

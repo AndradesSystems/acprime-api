@@ -28,6 +28,7 @@ enum PaymentType {
   JUROS
   PRINCIPAL
   MISTO
+  PERSONALIZADO
 }
 
 enum ContractPeriodicity {
