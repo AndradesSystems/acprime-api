@@ -5,28 +5,7 @@ import { AppError } from "../middlewares/error.middleware";
 
 export class PaymentController {
 
-  /* ===============================
-        ✅ QUITAÇÃO TOTAL (Payoff)
-  =============================== */
-  static async payFullContract(req: Request, res: Response, next: NextFunction, auth: AuthPayload) {
-    try {
-      const { contractId } = req.params;
-
-      // Validação explícita
-      if (!contractId || typeof contractId !== 'string') {
-        return res.status(400).json({ error: "ID do contrato é obrigatório e deve ser uma string." });
-      }
-
-      const result = await PaymentService.payFullContract(
-        contractId, // Aqui o TS já sabe que é string
-        auth.sub
-      );
-
-      return res.status(200).json(result);
-    } catch (e) {
-      return next(e);
-    }
-  }
+ 
 
  /* ===============================
         🗑️ EXCLUIR PAGAMENTO (Estorno)
@@ -57,34 +36,6 @@ export class PaymentController {
     }
   }
 
-  /* ===============================
-        ✅ PAGAR PARCELA INDIVIDUAL
-  =============================== */
-  static async payInstallment(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    auth: AuthPayload
-  ) {
-    try {
-      const { installmentId } = req.params;
-
-      if (!installmentId || typeof installmentId !== 'string') {
-        return res.status(400).json({
-          error: "O ID da parcela é obrigatório e deve ser uma string válida."
-        });
-      }
-
-      const result = await PaymentService.payInstallment(
-        installmentId,
-        auth.sub
-      );
-
-      return res.status(200).json(result);
-    } catch (e) {
-      return next(e);
-    }
-  }
 
   /* ===============================
           CRIAÇÃO DE PAGAMENTO AVULSO

@@ -2,8 +2,10 @@ import express from "express";
 import cors from "cors";
 import routes from "./routes/routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
+import { fixLegacyContracts } from "./fix";
 
 export const app = express();
+
 
 const allowedOrigins = [
   "http://localhost:8080",

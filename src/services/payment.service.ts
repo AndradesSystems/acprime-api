@@ -29,12 +29,12 @@ export class PaymentService {
   }
 
   /* =========================================================
-         🗑️ EXCLUSÃO DE PAGAMENTO (ESTORNO) - VERSÃO COMPLETA
-         - Valida Contrato Mensal (Control Z Corrigido de Taxas)
-         - Valida Contrato Parcelado (Restauração de Vencimentos)
-         - Reverte Saldo Operacional do Caixa do Usuário
-         - Tipagem TypeScript 100% Protegida
-       ========================================================= */
+          🗑️ EXCLUSÃO DE PAGAMENTO (ESTORNO) - VERSÃO COMPLETA
+          - Valida Contrato Mensal (Reset de Rollover e Juros)
+          - Valida Contrato Parcelado (Restauração de Vencimentos)
+          - Reverte Saldo Operacional do Caixa do Usuário
+          - Tipagem TypeScript 100% Protegida
+        ========================================================= */
   static async delete(paymentId: string, userId: string) {
     // 1. Busca o pagamento no histórico garantindo o vínculo com o usuário dono do contrato
     const payment = await prisma.paymentHistory.findFirst({
@@ -59,11 +59,23 @@ export class PaymentService {
         const taxaEstorno = Number(pagoTaxa || 0);
 
         /* ---------------------------------------------------------
-           CENÁRIO A: CONTRATO MENSAL (MONTHLY) - CONTROL Z FIX 🦾
+           CENÁRIO A: CONTRATO MENSAL (MONTHLY) - RESET DE ROLLOVER 🦾
         --------------------------------------------------------- */
         if (contract.periodicity === "MONTHLY") {
-          // 🚀 CORREÇÃO CRÍTICA: Valor em aberto recebe apenas Principal + Juros. Nunca a Taxa!
-          const saldoContratoEstornado = principalEstorno + jurosEstorno;
+          // Volta o relógio para o vencimento original da competência antes da virada
+          const dataVencimentoOriginal = payment.dataReferencia
+            ? new Date(payment.dataReferencia)
+            : contract.vencimentoEm;
+
+          // Restaura o valor principal que existia antes desse pagamento
+          const novoPrincipal = Number(contract.valorPrincipal) + principalEstorno;
+
+          // Recalcula exatamente o juro do mês que foi estornado (evitando o acúmulo da virada)
+          const jurosPercent = Number(contract.jurosPercent || 0);
+          const jurosDoMesOriginal = novoPrincipal * (jurosPercent / 100);
+
+          // O valor em aberto volta a ser o Principal Original + os Juros devidos daquela fatidica data
+          const novoValorEmAberto = novoPrincipal + jurosDoMesOriginal;
 
           // Determina como a taxa deve voltar ao estado anterior
           let acaoTaxa: any = { increment: taxaEstorno };
@@ -72,22 +84,17 @@ export class PaymentService {
             const match = payment.observacao.match(/\[META:TAXA_ORIGINAL=([\d.]+)\]/);
             if (match) {
               const taxaOriginal = Number(match[1]);
-              // Se foi personalizado, força o campo do banco voltar ao valor exato de antes
               acaoTaxa = taxaOriginal;
             }
           }
 
-          const dataVencimentoOriginal = payment.dataReferencia
-            ? new Date(payment.dataReferencia)
-            : contract.vencimentoEm;
-
           await tx.contract.update({
             where: { id: contractId },
             data: {
-              valorPrincipal: { increment: principalEstorno },
-              valorEmAberto: { increment: saldoContratoEstornado }, // Fim do saldo fantasma!
-              taxa: acaoTaxa, 
-              vencimentoEm: dataVencimentoOriginal, // Volta o relógio do mês!
+              valorPrincipal: novoPrincipal,
+              valorEmAberto: novoValorEmAberto, // Fim do saldo bola de neve!
+              taxa: acaoTaxa,
+              vencimentoEm: dataVencimentoOriginal,
               status: "ABERTO",
             },
           });
@@ -184,130 +191,10 @@ export class PaymentService {
     });
   }
 
-  /* ===============================
-        🔥 QUITAÇÃO COMPLETA (Payoff)
-  =============================== */
-  static async payFullContract(contractId: string, userId: string) {
-    const contract = await prisma.contract.findFirst({
-      where: { id: contractId, userId },
-      include: { installments: { where: { status: "PENDENTE" } } },
-    });
-
-    if (!contract || contract.status === "QUITADO") {
-      throw new AppError("Contrato inexistente ou já quitado.", 400);
-    }
-
-    const valorPrincipalAberto = Number(contract.valorEmAberto);
-    const taxaTotalAcumulada = Number(contract.taxa);
-    const totalPagar = valorPrincipalAberto + taxaTotalAcumulada;
-
-    const dataReferenciaAuditoria =
-      contract.periodicity === "MONTHLY" ? contract.vencimentoEm : new Date();
-
-    return await prisma.$transaction(
-      async (tx) => {
-        await tx.contractInstallment.updateMany({
-          where: { contractId, status: "PENDENTE" },
-          data: {
-            status: "PAGO",
-            taxa: 0,
-            dataPagamento: new Date(),
-          },
-        });
-
-        await tx.paymentHistory.create({
-          data: {
-            contractId,
-            createdByUserId: userId,
-            tipo: "MISTO",
-            valorPago: totalPagar,
-            pagoPrincipal: valorPrincipalAberto,
-            pagoTaxa: taxaTotalAcumulada,
-            pagoJuros: 0,
-            multaCobrada: taxaTotalAcumulada,
-            observacao: "Quitação total do contrato (Payoff)",
-            dataReferencia: dataReferenciaAuditoria,
-          },
-        });
-
-        return await tx.contract.update({
-          where: { id: contractId },
-          data: { valorEmAberto: 0, taxa: 0, status: "QUITADO" },
-        });
-      },
-      { timeout: 15000 },
-    );
-  }
-
-  /* ===============================
-        PAGAMENTO DE PARCELA ÚNICA
-  =============================== */
-  static async payInstallment(installmentId: string, userId: string) {
-    const inst = await prisma.contractInstallment.findFirst({
-      where: {
-        id: installmentId,
-        contract: { userId },
-      },
-      include: { contract: true },
-    });
-
-    if (!inst || inst.status === "PAGO")
-      throw new AppError("Parcela inválida.", 400);
-
-    const valorParcela = Number(inst.valor);
-    const taxaParcela = Number(inst.taxa);
-    const totalPago = valorParcela + taxaParcela;
-
-    return await prisma.$transaction(async (tx) => {
-      await tx.contractInstallment.update({
-        where: { id: installmentId },
-        data: { status: "PAGO", taxa: 0, dataPagamento: new Date() },
-      });
-
-      await tx.paymentHistory.create({
-        data: {
-          contractId: inst.contractId,
-          createdByUserId: userId,
-          tipo: "MISTO",
-          valorPago: totalPago,
-          pagoPrincipal: valorParcela,
-          pagoTaxa: taxaParcela,
-          pagoJuros: 0,
-          multaCobrada: taxaParcela,
-          dataReferencia: inst.dataVencimento,
-        },
-      });
-
-      const parcelasRestantes = await tx.contractInstallment.findMany({
-        where: { contractId: inst.contractId, status: "PENDENTE" },
-      });
-
-      const novoValorEmAberto = parcelasRestantes.reduce(
-        (acc, p) => acc + Number(p.valor),
-        0,
-      );
-      const novaSomaTaxas = parcelasRestantes.reduce(
-        (acc, p) => acc + Number(p.taxa),
-        0,
-      );
-
-      return await tx.contract.update({
-        where: { id: inst.contractId },
-        data: {
-          valorEmAberto: novoValorEmAberto,
-          taxa: novaSomaTaxas,
-          status:
-            novoValorEmAberto <= 0 && novaSomaTaxas <= 0
-              ? "QUITADO"
-              : inst.contract.status,
-        },
-      });
-    });
-  }
 
   /* =========================================================
-         💰 CRIAÇÃO DE PAGAMENTO COM CÁLCULO DE JUROS (ACID)
-     ========================================================= */
+           💰 CRIAÇÃO DE PAGAMENTO COM CÁLCULO DE JUROS (ACID)
+       ========================================================= */
   static async create(
     contractId: string,
     data: CreatePaymentInput,
@@ -324,7 +211,6 @@ export class PaymentService {
     }
 
     // 2. Busca o estado atual trazendo as parcelas pendentes ordenadas
-    // 🚀 CORREÇÃO REALIZADA: Linha "attachments: true" foi removida com sucesso para sanar o erro 500!
     const contractAtualizado = await prisma.contract.findUnique({
       where: { id: contractId },
       include: {
@@ -365,10 +251,9 @@ export class PaymentService {
             : saldoParaAbater;
 
         /* ---------------------------------------------------------
-           CENÁRIO A: CONTRATO MENSAL (MONTHLY) - DETECTA PERSONALIZADO 🛠️
+           CENÁRIO A: CONTRATO MENSAL (MONTHLY) - ROLLEVER COM CAPITALIZAÇÃO 🛠️
         --------------------------------------------------------- */
         if (contractAtualizado.periodicity === "MONTHLY") {
-          // Identifica se a operação atual possui taxa customizada
           const ehPersonalizado = data.valorDestinadoTaxa !== undefined;
           const tipoPagamentoFinal = ehPersonalizado ? "PERSONALIZADO" : data.tipo;
           const taxaOriginalDoBanco = Number(contractAtualizado.taxa || 0);
@@ -380,6 +265,7 @@ export class PaymentService {
           let principalAtual: number = Number(contractAtualizado.valorPrincipal || 0);
           let totalGeralDevido: number = Number(contractAtualizado.valorEmAberto || 0);
 
+          // Identifica os juros contidos no saldo atual em aberto antes do pagamento
           let jurosAtual: number = Math.max(0, totalGeralDevido - principalAtual);
           const totalMaxDevido: number = taxaAtual + totalGeralDevido;
 
@@ -402,7 +288,7 @@ export class PaymentService {
             taxaAtual = Math.max(0, taxaAtual - abatimento);
           }
 
-          // [Passo 2] Abate os Juros Mensais
+          // [Passo 2] Abate os Juros Mensais vigentes
           if (saldoParaAbater > 0 && jurosAtual > 0) {
             const abatimentoJuros: number = Math.min(saldoParaAbater, jurosAtual);
             pagoJurosAcumulado = abatimentoJuros;
@@ -410,7 +296,7 @@ export class PaymentService {
             jurosAtual -= abatimentoJuros;
           }
 
-          // [Passo 3] Abate o Principal Seco
+          // [Passo 3] Abate o Principal
           if (saldoParaAbater > 0 && principalAtual > 0) {
             const abatimentoPrincipal: number = Math.min(saldoParaAbater, principalAtual);
             pagoPrincipalAcumulado = abatimentoPrincipal;
@@ -418,12 +304,12 @@ export class PaymentService {
             principalAtual -= abatimentoPrincipal;
           }
 
+          // [Passo 4] Lógica de Renovação de Data e Recálculo para o Próximo Mês
+          let novaDataVencimento: Date = new Date(contractAtualizado.vencimentoEm);
           let novoValorEmAberto: number = principalAtual + jurosAtual;
 
-          // [Passo 4] Lógica de Renovação de Data (Rollover)
-          let novaDataVencimento: Date = new Date(contractAtualizado.vencimentoEm);
-
           if (principalAtual > 0) {
+            // Avança o relógio para o mês seguinte
             const dataBase: Date = new Date(contractAtualizado.vencimentoEm);
             const diaOriginal: number = dataBase.getUTCDate();
             dataBase.setUTCMonth(dataBase.getUTCMonth() + 1);
@@ -431,9 +317,16 @@ export class PaymentService {
               dataBase.setUTCDate(0);
             }
             novaDataVencimento = dataBase;
+
+            // Se o contrato continua ativo, calcula o juro correspondente ao novo mês
+            const jurosPercent = Number(contractAtualizado.jurosPercent || 0);
+            const novosJurosDoMes = principalAtual * (jurosPercent / 100);
+
+            // O valor em aberto passa a ser o Principal restante + juros remanescentes + novos juros calculados
+            novoValorEmAberto = principalAtual + jurosAtual + novosJurosDoMes;
           }
 
-          // Injeta a tag [META:TAXA_ORIGINAL=X] de forma limpa na string de observação
+          // Injeta a tag [META:TAXA_ORIGINAL=X] na observação se for personalizado
           const observacaoComMeta = ehPersonalizado
             ? `${data.observacao || ""}[META:TAXA_ORIGINAL=${taxaOriginalDoBanco}]`
             : data.observacao || "";
@@ -442,7 +335,7 @@ export class PaymentService {
             data: {
               contractId,
               createdByUserId: userId,
-              tipo: tipoPagamentoFinal, // "PERSONALIZADO" salvo aqui
+              tipo: tipoPagamentoFinal,
               valorPago: Number(data.valorPago),
               pagoPrincipal: pagoPrincipalAcumulado,
               pagoTaxa: pagoTaxaAcumulado,

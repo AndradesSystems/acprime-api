@@ -4,25 +4,6 @@ import { withAuth } from "../middlewares/auth.wrapper";
 
 const router = Router();
 
-/* ===============================
-    ✅ OPERAÇÕES DE PAGAMENTO
-=============================== */
-
-/** * 💰 QUITAÇÃO TOTAL (Payoff)
- * Rota para liquidar o contrato inteiro de uma vez sem timeout.
- */
-router.post(
-  "/contracts/:contractId/pay-full",
-  withAuth(PaymentController.payFullContract),
-);
-
-/** * 💳 PAGAR PARCELA INDIVIDUAL
- * Rota para dar baixa em uma única parcela específica.
- */
-router.post(
-  "/installments/:installmentId/pay",
-  withAuth(PaymentController.payInstallment),
-);
 
 /** * 📝 REGISTRO DE PAGAMENTO AVULSO
  * Abate automaticamente: Taxa -> Juros -> Principal.
