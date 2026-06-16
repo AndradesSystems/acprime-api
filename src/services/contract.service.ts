@@ -132,16 +132,17 @@ export class ContractService {
   }
 
   /* =========================================================
-       ✅ CRIAÇÃO (CREATE) - AJUSTADO PARA MEIA-NOITE UTC
-    ========================================================= */
+       ✅ CRIAÇÃO (CREATE) - AJUSTADO PARA MEIA-NOITE UTC (CORRIGIDO)
+       ========================================================= */
   static async create(data: {
     clientId: string;
     userId: string;
     valorPrincipal: number;
     jurosPercent: number;
-    vencimentoEm: string;
+    vencimentoEm?: string;
     periodicity: ContractPeriodicity;
     dataInicio?: string;
+    qtdParcelas?: number;
   }) {
     // Força a data de referência a iniciar estritamente na meia-noite UTC
     const dataRef = data.dataInicio ? new Date(data.dataInicio) : new Date();
@@ -160,7 +161,49 @@ export class ContractService {
       taxa: 0,
     };
 
-    if (data.periodicity === "MONTHLY") {
+    // =========================================================
+    // 🔀 SEPARAÇÃO DE REGRAS POR MODALIDADE (PERIODICITY)
+    // =========================================================
+
+    if (data.periodicity === "PARCELADO") {
+      // --- MODALIDADE EXCLUSIVA: PARCELADO ---
+      if (!data.qtdParcelas || data.qtdParcelas <= 0) {
+        throw new AppError("A quantidade de parcelas deve ser informada para a modalidade PARCELADO.", 400);
+      }
+
+      const jurosValor = data.valorPrincipal * (data.jurosPercent / 100);
+      const montanteTotal = data.valorPrincipal + jurosValor;
+      contractData.valorEmAberto = montanteTotal;
+
+      const valorParcela = Number((montanteTotal / data.qtdParcelas).toFixed(2));
+
+      const installmentsList = [];
+
+      for (let i = 0; i < data.qtdParcelas; i++) {
+        let vencimentoParcela = new Date(baseDate);
+        // Adiciona os meses de forma linear mantendo o dia escolhido pelo operador
+        vencimentoParcela.setUTCMonth(vencimentoParcela.getUTCMonth() + i);
+
+        installmentsList.push({
+          numeroParcela: i + 1,
+          valor: valorParcela,
+          taxa: 0,
+          dataVencimento: vencimentoParcela,
+          status: "PENDENTE"
+          // 🛑 Campos limpos: removidos metadados que não existem no schema.prisma
+        });
+      }
+
+      const primeiraParcela = installmentsList[0];
+      if (!primeiraParcela) {
+        throw new AppError("Erro ao gerar parcelas do contrato parcelado.", 500);
+      }
+
+      contractData.vencimentoEm = primeiraParcela.dataVencimento;
+      contractData.installments = { create: installmentsList };
+
+    } else if (data.periodicity === "MONTHLY") {
+      // --- MODALIDADE ANTERIOR: MONTHLY ---
       const jurosValor = data.valorPrincipal * (data.jurosPercent / 100);
       const montanteTotal = data.valorPrincipal + jurosValor;
 
@@ -169,7 +212,9 @@ export class ContractService {
       const nextMonth = new Date(baseDate);
       nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
       contractData.vencimentoEm = nextMonth;
+
     } else {
+      // --- MODALIDADES ANTERIORES: DAILY E WEEKLY ---
       const jurosValor = data.valorPrincipal * (data.jurosPercent / 100);
       const montanteTotal = data.valorPrincipal + jurosValor;
       contractData.valorEmAberto = montanteTotal;
@@ -192,7 +237,7 @@ export class ContractService {
           numeroParcela: i + 1,
           valor: valorParcela,
           taxa: 0,
-          dataVencimento: vencimentoParcela, // Já herda as 00:00:00 UTC da baseDate
+          dataVencimento: vencimentoParcela,
           status: "PENDENTE",
         });
       }
@@ -206,7 +251,9 @@ export class ContractService {
       contractData.installments = { create: installmentsList };
     }
 
-    // Executa a transação incluindo o plano do usuário no retorno final
+    // =========================================================
+    // 🔒 TRANSAÇÃO DE BANCO DE DADOS E VALIDAÇÕES DE PLANO/SALDO
+    // =========================================================
     const contratoCriado = await prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: data.userId },
@@ -257,7 +304,7 @@ export class ContractService {
     });
 
     // =========================================================
-    // DISPARO DA MENSAGEM AUTOMÁTICA (PÓS-CRIAÇÃO)
+    // ✉️ DISPARO DA MENSAGEM AUTOMÁTICA (PÓS-CRIAÇÃO)
     // =========================================================
     if (contratoCriado.client?.telefone && contratoCriado.userPlan !== "VAZIO") {
       (async () => {
@@ -265,7 +312,6 @@ export class ContractService {
           const formatarMoeda = (v: number) =>
             new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-          // Alterado para garantir que exiba a data correta no fuso local mesmo vindo zerada em UTC
           const formatarData = (d: Date) => {
             return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
           };
@@ -274,9 +320,15 @@ export class ContractService {
           const jurosPercent = Number(contratoCriado.jurosPercent);
           const totalEmAberto = Number(contratoCriado.valorEmAberto);
 
-          const jurosDoMes = principal * (jurosPercent / 100);
-          const numParcelas = contratoCriado.periodicity === "DAILY" ? 20 : 4;
-          const valorParcelaCalculada = totalEmAberto / numParcelas;
+          const jurosTotalCalculado = principal * (jurosPercent / 100);
+
+          let valorParcelaCalculada = 0;
+          if (contratoCriado.periodicity === "PARCELADO") {
+            valorParcelaCalculada = totalEmAberto / (data.qtdParcelas || 1);
+          } else {
+            const numParcelasOld = contratoCriado.periodicity === "DAILY" ? 20 : 4;
+            valorParcelaCalculada = totalEmAberto / numParcelasOld;
+          }
 
           const dadosTemplate = {
             nomeCliente: contratoCriado.client.nome,
@@ -284,7 +336,7 @@ export class ContractService {
             valorEmprestado: formatarMoeda(principal),
             taxaJuros: String(contratoCriado.jurosPercent),
             valorTotal: formatarMoeda(totalEmAberto),
-            valorJuros: formatarMoeda(jurosDoMes),
+            valorJuros: formatarMoeda(jurosTotalCalculado),
             valorParcela: formatarMoeda(valorParcelaCalculada),
             dataVencimento: formatarData(new Date(contratoCriado.vencimentoEm)),
           };

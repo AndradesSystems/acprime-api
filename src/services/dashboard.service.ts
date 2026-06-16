@@ -6,6 +6,7 @@ import {
   endOfDay,
 } from "date-fns";
 
+
 export class DashboardService {
   static async getSummary(
     userId: string,
@@ -24,6 +25,8 @@ export class DashboardService {
     // Helper para garantir aproximação e arredondamento financeiro de 2 casas decimais
     const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
+    const agora = new Date(); // 📆 Usado para checar atrasos independente do filtro de datas do front
+
     // =========================================================================
     // 1. TOTAL EMPRESTADO (SNAPSHOT GERAL)
     // =========================================================================
@@ -35,18 +38,20 @@ export class DashboardService {
       select: { valorPrincipal: true, periodicity: true },
     });
 
-    const subTotalEmprestado = { diario: 0, semanal: 0, mensal: 0 };
+    const subTotalEmprestado = { diario: 0, semanal: 0, mensal: 0, parcelado: 0 };
     activeContracts.forEach((c) => {
       const v = Number(c.valorPrincipal);
       if (c.periodicity === "DAILY") subTotalEmprestado.diario += v;
       else if (c.periodicity === "WEEKLY") subTotalEmprestado.semanal += v;
       else if (c.periodicity === "MONTHLY") subTotalEmprestado.mensal += v;
+      else if (c.periodicity === "PARCELADO") subTotalEmprestado.parcelado += v;
     });
 
     // Arredondando os subvalores para o payload do front
     subTotalEmprestado.diario = round2(subTotalEmprestado.diario);
     subTotalEmprestado.semanal = round2(subTotalEmprestado.semanal);
     subTotalEmprestado.mensal = round2(subTotalEmprestado.mensal);
+    subTotalEmprestado.parcelado = round2(subTotalEmprestado.parcelado);
 
     // =========================================================================
     // 2. TOTAL RECEBIDO (REALIZADO - CAIXA)
@@ -83,7 +88,7 @@ export class DashboardService {
     // 3. A RECEBER (PREVISÃO DE JUROS E MONTANTES)
     // =========================================================================
 
-    // A. PARCELAS (Diário/Semanal)
+    // A. PARCELAS (Diário/Semanal/Parcelado)
     const installmentsDueList = await prisma.contractInstallment.findMany({
       where: {
         contract: {
@@ -141,6 +146,46 @@ export class DashboardService {
     const totalMontanteAReceber = round2(valorTotalParcelas + (principalMensalPendente + jurosMensalPrevisto + taxasMensalPrevistas));
 
     // =========================================================================
+    // 🚀 5. CONTRATOS ATRASADOS (LIVRE DO FILTRO DE DATAS)
+    // =========================================================================
+    const allActiveContractsWithInstallments = await prisma.contract.findMany({
+      where: {
+        userId,
+        status: { not: "QUITADO" },
+      },
+      include: {
+        installments: {
+          where: { status: "PENDENTE" },
+          select: { valor: true, dataVencimento: true },
+        },
+      },
+    });
+
+    let qtdContratosAtrasados = 0;
+    let valorTotalAtrasado = 0;
+
+    allActiveContractsWithInstallments.forEach((c) => {
+      if (c.periodicity === "MONTHLY") {
+        if (new Date(c.vencimentoEm) < agora) {
+          qtdContratosAtrasados += 1;
+          valorTotalAtrasado += Number(c.valorEmAberto || 0);
+        }
+      } else {
+        // ✨ CORRIGIDO SINTAXE: Removido espaço e texto inválido
+        const parcelasAtrasadas = c.installments.filter(
+          (i) => new Date(i.dataVencimento) < agora
+        );
+
+        if (parcelasAtrasadas.length > 0) {
+          qtdContratosAtrasados += 1;
+          parcelasAtrasadas.forEach((i) => {
+            valorTotalAtrasado += Number(i.valor || 0);
+          });
+        }
+      }
+    });
+
+    // =========================================================================
     // 4. CONTRATOS RECENTES
     // =========================================================================
     const recentContractsData = await prisma.contract.findMany({
@@ -182,12 +227,12 @@ export class DashboardService {
       totalEmprestado: round2(
         subTotalEmprestado.diario +
         subTotalEmprestado.semanal +
-        subTotalEmprestado.mensal
+        subTotalEmprestado.mensal +
+        subTotalEmprestado.parcelado
       ),
       subTotalEmprestado,
 
       jurosETaxasAReceber: totalJurosGeralAReceber,
-      // 🎯 MODIFICADO: Agora estruturado exatamente com os nomes que seu card do front-end lê
       subJurosAReceber: {
         jurosMensais: round2(jurosMensalPrevisto),
         jurosParcelados: round2(jurosExtraidosParcelas),
@@ -206,6 +251,8 @@ export class DashboardService {
         subTotalRecebido.viaTaxas
       ),
       subTotalRecebido,
+
+      contratosAtrasados: qtdContratosAtrasados,
 
       recentContracts,
     };

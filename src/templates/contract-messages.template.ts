@@ -7,9 +7,35 @@ export interface MessageData {
   valorJuros?: string;
   valorParcela?: string;
   dataVencimento: string;
+  qtdParcelas?: string; // Adicionado para suportar a modalidade dinâmica do PARCELADO
 }
 
-export const ContractTemplates = {
+// Tipando o objeto explicitamente com Record para aceitar qualquer chave vinda do ContractPeriodicity
+export const ContractTemplates: Record<string, (d: MessageData) => string> = {
+  PARCELADO: (d: MessageData) => `Olá, ${d.nomeCliente}.
+
+Seu contrato foi criado com sucesso em nosso sistema.
+
+📄 Informações do contrato:
+
+• Número do contrato: # ${d.idContrato}
+• Modalidade: Parcelado Fixo
+• Valor emprestado: ${d.valorEmprestado}
+• Percentual de juros total: ${d.taxaJuros}%
+• Valor total da operação: ${d.valorTotal}
+
+💰 Forma de pagamento:
+
+• Quantidade de parcelas: ${d.qtdParcelas || "---"} parcelas
+• Valor da parcela: ${d.valorParcela || "---"}
+• Data do primeiro vencimento: ${d.dataVencimento}
+
+📌 Informações adicionais:
+
+• O controle de capital e lucro desta operação é atualizado automaticamente a cada parcela recebida.
+
+Qualquer dúvida, estamos à disposição.`,
+
   MONTHLY: (d: MessageData) => `Olá, ${d.nomeCliente}.
 
 Seu contrato foi criado com sucesso em nosso sistema.

@@ -470,7 +470,7 @@ export class PaymentService {
     );
   }
 
-  /* ===============================
+ /* ===============================
         📊 SUMMARY FINANCEIRO
   =============================== */
   static async financeSummary(startDate: Date, endDate: Date, userId: string) {
@@ -492,15 +492,18 @@ export class PaymentService {
     let emprestadoDiario = 0;
     let emprestadoSemanal = 0;
     let emprestadoMensal = 0;
+    let emprestadoParcelado = 0; // ✨ Incluído o acumulador do parcelado
 
     activeContractsGrouped.forEach((group) => {
       const valor = Number(group._sum.valorPrincipal || 0);
       if (group.periodicity === "DAILY") emprestadoDiario = valor;
       else if (group.periodicity === "WEEKLY") emprestadoSemanal = valor;
       else if (group.periodicity === "MONTHLY") emprestadoMensal = valor;
+      else if (group.periodicity === "PARCELADO") emprestadoParcelado = valor; // ✨ Incluída a verificação do parcelado
     });
 
-    const totalEmprestado = emprestadoDiario + emprestadoSemanal + emprestadoMensal;
+    // ✨ Incluído o 'emprestadoParcelado' na soma total exatamente como antes
+    const totalEmprestado = emprestadoDiario + emprestadoSemanal + emprestadoMensal + emprestadoParcelado;
 
     const receivedMonthly = await prisma.paymentHistory.aggregate({
       where: {
@@ -598,6 +601,7 @@ export class PaymentService {
         diario: emprestadoDiario,
         semanal: emprestadoSemanal,
         mensal: emprestadoMensal,
+        parcelado: emprestadoParcelado, // ✨ Incluído no retorno para o front
       },
       jurosETaxasAReceber,
       subJurosAReceber: {

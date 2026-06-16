@@ -43,7 +43,8 @@ export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType]
 export const ContractPeriodicity = {
   DAILY: 'DAILY',
   WEEKLY: 'WEEKLY',
-  MONTHLY: 'MONTHLY'
+  MONTHLY: 'MONTHLY',
+  PARCELADO: 'PARCELADO'
 } as const
 
 export type ContractPeriodicity = (typeof ContractPeriodicity)[keyof typeof ContractPeriodicity]
