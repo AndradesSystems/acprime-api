@@ -10,6 +10,13 @@ const router = Router();
  */
 router.post("/contracts/:contractId", withAuth(PaymentController.create));
 
+
+/** * 📝 REGISTRO DE PAGAMENTO AMORTIZAÇÃO
+ * Abate automaticamente: Taxa -> Juros -> Principal.
+ */
+router.post("/amortize/:contractId", withAuth(PaymentController.amortize));
+
+
 /* ===============================
     🔍 CONSULTAS E HISTÓRICO
 =============================== */

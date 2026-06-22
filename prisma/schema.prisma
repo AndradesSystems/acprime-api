@@ -29,6 +29,7 @@ enum PaymentType {
   PRINCIPAL
   MISTO
   PERSONALIZADO
+  AMORTIZACAO
 }
 
 enum ContractPeriodicity {

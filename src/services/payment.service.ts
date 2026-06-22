@@ -7,6 +7,15 @@ import type { Prisma } from "../generated/prisma/client";
 // 🔥 Adicionado o tipo PERSONALIZADO para validações e relatórios
 type PaymentType = "JUROS" | "PRINCIPAL" | "MISTO" | "PERSONALIZADO";
 
+interface AmortizePaymentInput {
+  tipo: PaymentType;
+  valorPago: number;             // O total geral pago
+  valorDestinadoPrincipal: number; // O que vai para o Principal
+  valorDestinadoJuros: number;     // O que vai para os Juros
+  valorDestinadoTaxa: number;      // O que vai para a Taxa
+  observacao?: string;
+}
+
 interface CreatePaymentInput {
   tipo: PaymentType;
   valorPago: number;
@@ -29,12 +38,12 @@ export class PaymentService {
   }
 
   /* =========================================================
-          🗑️ EXCLUSÃO DE PAGAMENTO (ESTORNO) - VERSÃO COMPLETA
-          - Valida Contrato Mensal (Reset de Rollover e Juros)
-          - Valida Contrato Parcelado (Restauração de Vencimentos)
-          - Reverte Saldo Operacional do Caixa do Usuário
-          - Tipagem TypeScript 100% Protegida
-        ========================================================= */
+       🗑️ EXCLUSÃO DE PAGAMENTO (ESTORNO) - VERSÃO CORRIGIDA
+       - Valida Contrato Mensal (Reset de Rollover e Juros)
+       - Valida Contrato Parcelado (Restauração Cirúrgica por Meta)
+       - Reverte Saldo Operacional do Caixa do Usuário
+       - Tipagem TypeScript 100% Protegida
+       ========================================================= */
   static async delete(paymentId: string, userId: string) {
     // 1. Busca o pagamento no histórico garantindo o vínculo com o usuário dono do contrato
     const payment = await prisma.paymentHistory.findFirst({
@@ -49,6 +58,7 @@ export class PaymentService {
       );
     }
 
+    // Mantido exatamente como o seu original (Sua desestruturação está correta!)
     const { contractId, pagoPrincipal, pagoJuros, pagoTaxa, contract } = payment;
 
     // 2. Inicia a transação para garantir consistência total nos estornos
@@ -57,6 +67,7 @@ export class PaymentService {
         const principalEstorno = Number(pagoPrincipal || 0);
         const jurosEstorno = Number(pagoJuros || 0);
         const taxaEstorno = Number(pagoTaxa || 0);
+        const totalEstornoValor = principalEstorno + jurosEstorno;
 
         /* ---------------------------------------------------------
            CENÁRIO A: CONTRATO MENSAL (MONTHLY) - RESET DE ROLLOVER 🦾
@@ -74,7 +85,7 @@ export class PaymentService {
           const jurosPercent = Number(contract.jurosPercent || 0);
           const jurosDoMesOriginal = novoPrincipal * (jurosPercent / 100);
 
-          // O valor em aberto volta a ser o Principal Original + os Juros devidos daquela fatidica data
+          // O valor em aberto volta a ser o Principal Original + os Juros devidos daquela data
           const novoValorEmAberto = novoPrincipal + jurosDoMesOriginal;
 
           // Determina como a taxa deve voltar ao estado anterior
@@ -92,7 +103,7 @@ export class PaymentService {
             where: { id: contractId },
             data: {
               valorPrincipal: novoPrincipal,
-              valorEmAberto: novoValorEmAberto, // Fim do saldo bola de neve!
+              valorEmAberto: novoValorEmAberto,
               taxa: acaoTaxa,
               vencimentoEm: dataVencimentoOriginal,
               status: "ABERTO",
@@ -100,39 +111,94 @@ export class PaymentService {
           });
         } else {
           /* ---------------------------------------------------------
-              CENÁRIO B: CONTRATO PARCELADO (DAILY / WEEKLY)
+             CENÁRIO B: CONTRATO PARCELADO (DAILY / WEEKLY) - CIRÚRGICO 🎯
           --------------------------------------------------------- */
-          const installmentsPaid = await tx.contractInstallment.findMany({
-            where: { contractId, status: "PAGO" },
-            orderBy: { numeroParcela: "desc" },
-          });
+          let restauradoPorMeta = false;
 
-          let valorRestanteParaEstornar = principalEstorno + jurosEstorno;
-          let taxaRestanteParaEstornar = taxaEstorno;
+          // Tenta rastrear o estorno pelos metadados cirúrgicos injetados no pagamento/amortização
+          if (payment.observacao) {
+            const matchParcelas = payment.observacao.match(/\[META:PARCELAS=([^\]]+)\]/);
+            // Tenta rastrear o estorno pelos metadados cirúrgicos injetados no pagamento/amortização
+            if (payment.observacao) {
+              const matchParcelas = payment.observacao.match(/\[META:PARCELAS=([^\]]+)\]/);
 
-          for (const inst of installmentsPaid) {
-            if (valorRestanteParaEstornar <= 0 && taxaRestanteParaEstornar <= 0) break;
+              // CORREÇÃO AQUI: Verifica se o match foi bem-sucedido antes de dar o split
+              if (matchParcelas && matchParcelas[1]) {
+                const tokens = matchParcelas[1].split("|");
+                for (const token of tokens) {
+                  if (!token) continue;
+                  const [instId, vAbatido, tAbatido] = token.split(":");
+                  const valInc = Number(vAbatido || 0);
+                  const taxInc = Number(tAbatido || 0);
 
-            await tx.contractInstallment.update({
-              where: { id: inst.id },
-              data: {
-                status: "PENDENTE",
-                dataPagamento: null,
-                valor: { increment: valorRestanteParaEstornar },
-                taxa: { increment: taxaRestanteParaEstornar }
-              },
-            });
+                  if (instId) {
+                    const instAtual = await tx.contractInstallment.findUnique({ where: { id: instId } });
+                    if (instAtual) {
+                      const novoValorInst = Number(instAtual.valor) + valInc;
+                      const novaTaxaInst = Number(instAtual.taxa) + taxInc;
 
-            valorRestanteParaEstornar = 0;
-            taxaRestanteParaEstornar = 0;
+                      await tx.contractInstallment.update({
+                        where: { id: instId },
+                        data: {
+                          valor: novoValorInst,
+                          taxa: novaTaxaInst,
+                          status: novoValorInst <= 0 && novaTaxaInst <= 0 ? "PAGO" : "PENDENTE",
+                          dataPagamento: novoValorInst <= 0 && novaTaxaInst <= 0 ? instAtual.dataPagamento : null,
+                        },
+                      });
+                    }
+                  }
+                }
+                restauradoPorMeta = true;
+              }
+            }
           }
 
-          const pendingInstallments = await tx.contractInstallment.findMany({
-            where: { contractId, status: "PENDENTE" },
-            orderBy: { dataVencimento: "asc" },
+          // Fallback seguro caso seja um pagamento legado antigo (sem a tag de metadados)
+          if (!restauradoPorMeta) {
+            const installmentsPaid = await tx.contractInstallment.findMany({
+              where: { contractId, status: "PAGO" },
+              orderBy: { numeroParcela: "desc" },
+            });
+
+            let valorRestanteParaEstornar = totalEstornoValor;
+            let taxaRestanteParaEstornar = taxaEstorno;
+
+            for (const inst of installmentsPaid) {
+              if (valorRestanteParaEstornar <= 0 && taxaRestanteParaEstornar <= 0) break;
+
+              await tx.contractInstallment.update({
+                where: { id: inst.id },
+                data: {
+                  status: "PENDENTE",
+                  dataPagamento: null,
+                  valor: { increment: valorRestanteParaEstornar },
+                  taxa: { increment: taxaRestanteParaEstornar }
+                },
+              });
+
+              valorRestanteParaEstornar = 0;
+              taxaRestanteParaEstornar = 0;
+            }
+          }
+
+          // Recalcula de forma consolidada o estado do contrato baseado em todas as parcelas atuais
+          const todasParcelas = await tx.contractInstallment.findMany({
+            where: { contractId },
           });
 
-          const primeiraParcelaPendente = pendingInstallments[0];
+          const novoSaldoPrincipal = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .reduce((acc, p) => acc + Number(p.valor), 0);
+
+          const novoSaldoTaxa = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .reduce((acc, p) => acc + Number(p.taxa), 0);
+
+          const primeiraParcelaPendente = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime())[0];
+
           const novoVencimentoContrato = primeiraParcelaPendente?.dataVencimento
             ? new Date(primeiraParcelaPendente.dataVencimento)
             : contract.vencimentoEm;
@@ -140,10 +206,10 @@ export class PaymentService {
           await tx.contract.update({
             where: { id: contractId },
             data: {
-              valorEmAberto: { increment: principalEstorno + jurosEstorno },
-              taxa: { increment: taxaEstorno },
+              valorEmAberto: novoSaldoPrincipal,
+              taxa: novoSaldoTaxa,
               vencimentoEm: novoVencimentoContrato,
-              status: "ABERTO",
+              status: novoSaldoPrincipal <= 0 && novoSaldoTaxa <= 0 ? "QUITADO" : "ABERTO",
             },
           });
         }
@@ -166,15 +232,13 @@ export class PaymentService {
         await tx.paymentHistory.delete({
           where: { id: paymentId },
         });
-
       },
-      { timeout: 15000 },
+      { timeout: 25000 },
     );
   }
-
   static async historyByContract(contractId: string, userId: string) {
     const contract = await prisma.contract.findFirst({
-      where: { id: contractId, userId }, // 🔒 Trava de usuário
+      where: { id: contractId, userId },
       select: { id: true },
     });
 
@@ -191,17 +255,10 @@ export class PaymentService {
     });
   }
 
-
   /* =========================================================
-           💰 CRIAÇÃO DE PAGAMENTO COM CÁLCULO DE JUROS (ACID)
-       ========================================================= */
-  static async create(
-    contractId: string,
-    data: CreatePaymentInput,
-    userId: string,
-  ): Promise<void> {
-
-    // 1. Validação Inicial de Existência e Permissão
+     💰 CRIAÇÃO DE PAGAMENTO COM MAPEAMENTO DE METADADOS
+     ========================================================= */
+  static async create(contractId: string, data: CreatePaymentInput, userId: string): Promise<void> {
     const contract = await prisma.contract.findFirst({
       where: { id: contractId, userId },
     });
@@ -210,7 +267,6 @@ export class PaymentService {
       throw new AppError("Contrato não encontrado", 404);
     }
 
-    // 2. Busca o estado atual trazendo as parcelas pendentes ordenadas
     const contractAtualizado = await prisma.contract.findUnique({
       where: { id: contractId },
       include: {
@@ -225,7 +281,6 @@ export class PaymentService {
       throw new AppError("Erro ao processar contrato", 500);
     }
 
-    // 3. Inicia a Transação ACID no Banco de Dados
     return prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         let saldoParaAbater: number = Number(data.valorPago);
@@ -233,100 +288,78 @@ export class PaymentService {
         let pagoPrincipalAcumulado: number = 0;
         let pagoJurosAcumulado: number = 0;
 
-        // 🎯 Definição da Data de Referência (Competência)
         let dataReferenciaAuditoria: Date;
-
         if (contractAtualizado.periodicity === "MONTHLY") {
           dataReferenciaAuditoria = new Date(contractAtualizado.vencimentoEm);
         } else {
-          dataReferenciaAuditoria =
-            contractAtualizado.installments[0]?.dataVencimento
-              ? new Date(contractAtualizado.installments[0].dataVencimento)
-              : new Date();
+          dataReferenciaAuditoria = contractAtualizado.installments[0]?.dataVencimento
+            ? new Date(contractAtualizado.installments[0].dataVencimento)
+            : new Date();
         }
 
         let limiteTaxaRestante: number =
-          data.valorDestinadoTaxa !== undefined
-            ? Number(data.valorDestinadoTaxa)
-            : saldoParaAbater;
+          data.valorDestinadoTaxa !== undefined ? Number(data.valorDestinadoTaxa) : saldoParaAbater;
 
         /* ---------------------------------------------------------
-           CENÁRIO A: CONTRATO MENSAL (MONTHLY) - ROLLEVER COM CAPITALIZAÇÃO 🛠️
+           CENÁRIO A: CONTRATO MENSAL (MONTHLY)
         --------------------------------------------------------- */
         if (contractAtualizado.periodicity === "MONTHLY") {
           const ehPersonalizado = data.valorDestinadoTaxa !== undefined;
           const tipoPagamentoFinal = ehPersonalizado ? "PERSONALIZADO" : data.tipo;
           const taxaOriginalDoBanco = Number(contractAtualizado.taxa || 0);
 
-          let taxaAtual: number = ehPersonalizado
-            ? Number(data.valorDestinadoTaxa)
-            : taxaOriginalDoBanco;
-
+          let taxaAtual: number = ehPersonalizado ? Number(data.valorDestinadoTaxa) : taxaOriginalDoBanco;
           let principalAtual: number = Number(contractAtualizado.valorPrincipal || 0);
           let totalGeralDevido: number = Number(contractAtualizado.valorEmAberto || 0);
 
-          // Identifica os juros contidos no saldo atual em aberto antes do pagamento
           let jurosAtual: number = Math.max(0, totalGeralDevido - principalAtual);
           const totalMaxDevido: number = taxaAtual + totalGeralDevido;
 
           if (saldoParaAbater > totalMaxDevido) {
             throw new AppError(
-              `O valor enviado (R$ ${saldoParaAbater}) excede o total devedor do contrato ajustado (R$ ${totalMaxDevido}).`,
+              `O valor enviado (R$ ${saldoParaAbater}) excede o total devedor do contrato (R$ ${totalMaxDevido}).`,
               400
             );
           }
 
-          // [Passo 1] Abate Taxa Mensal
           if (taxaAtual > 0 && limiteTaxaRestante > 0) {
-            const abatimento: number = Math.min(
-              saldoParaAbater,
-              taxaAtual,
-              limiteTaxaRestante,
-            );
+            const abatimento = Math.min(saldoParaAbater, taxaAtual, limiteTaxaRestante);
             pagoTaxaAcumulado = abatimento;
             saldoParaAbater -= abatimento;
             taxaAtual = Math.max(0, taxaAtual - abatimento);
           }
 
-          // [Passo 2] Abate os Juros Mensais vigentes
           if (saldoParaAbater > 0 && jurosAtual > 0) {
-            const abatimentoJuros: number = Math.min(saldoParaAbater, jurosAtual);
+            const abatimentoJuros = Math.min(saldoParaAbater, jurosAtual);
             pagoJurosAcumulado = abatimentoJuros;
             saldoParaAbater -= abatimentoJuros;
             jurosAtual -= abatimentoJuros;
           }
 
-          // [Passo 3] Abate o Principal
           if (saldoParaAbater > 0 && principalAtual > 0) {
-            const abatimentoPrincipal: number = Math.min(saldoParaAbater, principalAtual);
+            const abatimentoPrincipal = Math.min(saldoParaAbater, principalAtual);
             pagoPrincipalAcumulado = abatimentoPrincipal;
             saldoParaAbater -= abatimentoPrincipal;
             principalAtual -= abatimentoPrincipal;
           }
 
-          // [Passo 4] Lógica de Renovação de Data e Recálculo para o Próximo Mês
           let novaDataVencimento: Date = new Date(contractAtualizado.vencimentoEm);
           let novoValorEmAberto: number = principalAtual + jurosAtual;
 
           if (principalAtual > 0) {
-            // Avança o relógio para o mês seguinte
-            const dataBase: Date = new Date(contractAtualizado.vencimentoEm);
-            const diaOriginal: number = dataBase.getUTCDate();
+            const dataBase = new Date(contractAtualizado.vencimentoEm);
+            const diaOriginal = dataBase.getUTCDate();
             dataBase.setUTCMonth(dataBase.getUTCMonth() + 1);
             if (dataBase.getUTCDate() !== diaOriginal) {
               dataBase.setUTCDate(0);
             }
             novaDataVencimento = dataBase;
 
-            // Se o contrato continua ativo, calcula o juro correspondente ao novo mês
             const jurosPercent = Number(contractAtualizado.jurosPercent || 0);
             const novosJurosDoMes = principalAtual * (jurosPercent / 100);
-
-            // O valor em aberto passa a ser o Principal restante + juros remanescentes + novos juros calculados
             novoValorEmAberto = principalAtual + jurosAtual + novosJurosDoMes;
           }
 
-          // Injeta a tag [META:TAXA_ORIGINAL=X] na observação se for personalizado
           const observacaoComMeta = ehPersonalizado
             ? `${data.observacao || ""}[META:TAXA_ORIGINAL=${taxaOriginalDoBanco}]`
             : data.observacao || "";
@@ -357,44 +390,52 @@ export class PaymentService {
               status: novoValorEmAberto <= 0 && taxaAtual <= 0 ? "QUITADO" : "ABERTO",
             },
           });
-
         } else {
           /* ---------------------------------------------------------
-               CENÁRIO B: CONTRATO PARCELADO (INSTALLMENTS) - INTACTO 🔒
+             CENÁRIO B: CONTRATO PARCELADO (DAILY / WEEKLY) - COM RASTREIO
           --------------------------------------------------------- */
+          let metaParcelasLog = "";
+
           for (const parcela of contractAtualizado.installments) {
             if (saldoParaAbater <= 0) break;
 
-            let valorParcelaRestante: number = Number(parcela.valor);
-            let taxaParcelaRestante: number = Number(parcela.taxa);
-            const jurosPercent: number = Number(contractAtualizado.jurosPercent || 0);
+            const valorOriginalAntes = Number(parcela.valor);
+            const taxaOriginalAntes = Number(parcela.taxa);
 
+            let valorParcelaRestante = valorOriginalAntes;
+            let taxaParcelaRestante = taxaOriginalAntes;
+            const jurosPercent = Number(contractAtualizado.jurosPercent || 0);
+
+            let abatidoTaxaNestaParcela = 0;
             if (taxaParcelaRestante > 0 && limiteTaxaRestante > 0) {
-              const abatimentoTaxa: number = Math.min(
-                saldoParaAbater,
-                taxaParcelaRestante,
-                limiteTaxaRestante,
-              );
-              taxaParcelaRestante -= abatimentoTaxa;
-              saldoParaAbater -= abatimentoTaxa;
-              limiteTaxaRestante -= abatimentoTaxa;
-              pagoTaxaAcumulado += abatimentoTaxa;
+              abatidoTaxaNestaParcela = Math.min(saldoParaAbater, taxaParcelaRestante, limiteTaxaRestante);
+              taxaParcelaRestante -= abatidoTaxaNestaParcela;
+              saldoParaAbater -= abatidoTaxaNestaParcela;
+              limiteTaxaRestante -= abatidoTaxaNestaParcela;
+              pagoTaxaAcumulado += abatidoTaxaNestaParcela;
             }
 
+            let abatidoValorNestaParcela = 0;
             if (saldoParaAbater > 0 && valorParcelaRestante > 0) {
-              const fatorJuros: number = jurosPercent / (100 + jurosPercent);
-              const totalJurosNaParcela: number = valorParcelaRestante * fatorJuros;
-              const totalPrincipalNaParcela: number = valorParcelaRestante - totalJurosNaParcela;
+              const fatorJuros = jurosPercent / (100 + jurosPercent);
+              const totalJurosNaParcela = valorParcelaRestante * fatorJuros;
+              const totalPrincipalNaParcela = valorParcelaRestante - totalJurosNaParcela;
 
-              const abatimentoJuros: number = Math.min(saldoParaAbater, totalJurosNaParcela);
+              const abatimentoJuros = Math.min(saldoParaAbater, totalJurosNaParcela);
               pagoJurosAcumulado += abatimentoJuros;
               saldoParaAbater -= abatimentoJuros;
 
-              const abatimentoPrincipal: number = Math.min(saldoParaAbater, totalPrincipalNaParcela);
+              const abatimentoPrincipal = Math.min(saldoParaAbater, totalPrincipalNaParcela);
               pagoPrincipalAcumulado += abatimentoPrincipal;
               saldoParaAbater -= abatimentoPrincipal;
 
-              valorParcelaRestante -= (abatimentoJuros + abatimentoPrincipal);
+              abatidoValorNestaParcela = abatimentoJuros + abatimentoPrincipal;
+              valorParcelaRestante -= abatidoValorNestaParcela;
+            }
+
+            // Se houve alteração na parcela, salvamos nos metadados do log
+            if (abatidoValorNestaParcela > 0 || abatidoTaxaNestaParcela > 0) {
+              metaParcelasLog += `${parcela.id}:${abatidoValorNestaParcela}:${abatidoTaxaNestaParcela}|`;
             }
 
             await tx.contractInstallment.update({
@@ -412,11 +453,11 @@ export class PaymentService {
             where: { contractId },
           });
 
-          const novoSaldoPrincipal: number = todasParcelas
+          const novoSaldoPrincipal = todasParcelas
             .filter((p) => p.status === "PENDENTE")
             .reduce((acc, p) => acc + Number(p.valor), 0);
 
-          const novoSaldoTaxa: number = todasParcelas
+          const novoSaldoTaxa = todasParcelas
             .filter((p) => p.status === "PENDENTE")
             .reduce((acc, p) => acc + Number(p.taxa), 0);
 
@@ -424,21 +465,23 @@ export class PaymentService {
             .filter((p) => p.status === "PENDENTE")
             .sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime())[0];
 
-          const novoVencimentoContrato: Date = proximaParcelaPendente
+          const novoVencimentoContrato = proximaParcelaPendente
             ? new Date(proximaParcelaPendente.dataVencimento)
             : new Date(contractAtualizado.vencimentoEm);
+
+          const observacaoFinalComMeta = `${data.observacao || ""}[META:PARCELAS=${metaParcelasLog}]`;
 
           await tx.paymentHistory.create({
             data: {
               contractId,
               createdByUserId: userId,
-              tipo: "MISTO",
+              tipo: data.tipo || "MISTO",
               valorPago: Number(data.valorPago),
               pagoPrincipal: pagoPrincipalAcumulado,
               pagoTaxa: pagoTaxaAcumulado,
               pagoJuros: pagoJurosAcumulado,
               multaCobrada: pagoTaxaAcumulado,
-              observacao: data.observacao || "",
+              observacao: observacaoFinalComMeta,
               dataPagamento: new Date(),
               dataReferencia: dataReferenciaAuditoria,
             },
@@ -455,24 +498,233 @@ export class PaymentService {
           });
         }
 
-        // Devolução ao caixa operacional do parceiro
         if (pagoPrincipalAcumulado > 0) {
           await tx.user.update({
             where: { id: userId },
             data: {
-              saldoOperacional: { increment: pagoPrincipalAcumulado }
-            }
+              saldoOperacional: { increment: pagoPrincipalAcumulado },
+            },
           });
         }
-
       },
-      { timeout: 20000 },
+      { timeout: 25000 }
     );
   }
 
- /* ===============================
-        📊 SUMMARY FINANCEIRO
-  =============================== */
+  /* =========================================================
+     💸 AMORTIZAÇÃO DE SALDO COM MAPEAMENTO DE METADADOS
+     ========================================================= */
+  static async amortize(contractId: string, data: AmortizePaymentInput, userId: string): Promise<void> {
+    const contract = await prisma.contract.findFirst({
+      where: { id: contractId, userId },
+    });
+
+    if (!contract) {
+      throw new AppError("Contrato não encontrado", 404);
+    }
+
+    return prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const contractAtualizado = await tx.contract.findUnique({
+          where: { id: contractId },
+          include: {
+            installments: {
+              where: { status: "PENDENTE" },
+              orderBy: { numeroParcela: "asc" },
+            },
+          },
+        });
+
+        if (!contractAtualizado) {
+          throw new AppError("Erro ao processar contrato na transação", 500);
+        }
+
+        const somaPartes =
+          Number(data.valorDestinadoPrincipal) + Number(data.valorDestinadoJuros) + Number(data.valorDestinadoTaxa);
+        if (Math.abs(somaPartes - Number(data.valorPago)) > 0.01) {
+          throw new AppError("A soma do Principal, Juros e Taxa não condiz com o valor total pago.", 400);
+        }
+
+        let principalDisponivel = Number(data.valorDestinadoPrincipal);
+        let jurosDisponivel = Number(data.valorDestinadoJuros);
+        let taxaDisponivel = Number(data.valorDestinadoTaxa);
+
+        const pagoPrincipalAcumulado = principalDisponivel;
+        const pagoJurosAcumulado = jurosDisponivel;
+        const pagoTaxaAcumulado = taxaDisponivel;
+
+        const dataReferenciaAuditoria =
+          contractAtualizado.periodicity === "MONTHLY"
+            ? new Date(contractAtualizado.vencimentoEm)
+            : contractAtualizado.installments[0]?.dataVencimento
+              ? new Date(contractAtualizado.installments[0].dataVencimento)
+              : new Date();
+
+        /* ---------------------------------------------------------
+           CENÁRIO A: CONTRATO MENSAL (MONTHLY)
+        --------------------------------------------------------- */
+        if (contractAtualizado.periodicity === "MONTHLY") {
+          let principalAtual = Number(contractAtualizado.valorPrincipal || 0);
+          let totalGeralDevido = Number(contractAtualizado.valorEmAberto || 0);
+          let taxaAtual = Number(contractAtualizado.taxa || 0);
+
+          let jurosAtual = Math.max(0, totalGeralDevido - principalAtual);
+
+          taxaAtual = Math.max(0, taxaAtual - taxaDisponivel);
+          jurosAtual = Math.max(0, jurosAtual - jurosDisponivel);
+          principalAtual = Math.max(0, principalAtual - principalDisponivel);
+
+          let novaDataVencimento = new Date(contractAtualizado.vencimentoEm);
+          let novoValorEmAberto = principalAtual + jurosAtual;
+
+          if (principalAtual > 0) {
+            const dataBase = new Date(contractAtualizado.vencimentoEm);
+            const diaOriginal = dataBase.getUTCDate();
+            dataBase.setUTCMonth(dataBase.getUTCMonth() + 1);
+            if (dataBase.getUTCDate() !== diaOriginal) {
+              dataBase.setUTCDate(0);
+            }
+            novaDataVencimento = dataBase;
+
+            const jurosPercent = Number(contractAtualizado.jurosPercent || 0);
+            const novosJurosDoMes = principalAtual * (jurosPercent / 100);
+            novoValorEmAberto = principalAtual + jurosAtual + novosJurosDoMes;
+          }
+
+          await tx.contract.update({
+            where: { id: contractId },
+            data: {
+              valorPrincipal: principalAtual,
+              valorEmAberto: novoValorEmAberto,
+              taxa: taxaAtual,
+              vencimentoEm: novaDataVencimento,
+              status: novoValorEmAberto <= 0 && taxaAtual <= 0 ? "QUITADO" : "ABERTO",
+            },
+          });
+        } else {
+          /* ---------------------------------------------------------
+             CENÁRIO B: CONTRATO PARCELADO (DAILY / WEEKLY) - AMORTIZAÇÃO
+          --------------------------------------------------------- */
+          let metaParcelasLog = "";
+
+          for (const parcela of contractAtualizado.installments) {
+            if (taxaDisponivel <= 0 && jurosDisponivel <= 0 && principalDisponivel <= 0) break;
+
+            const valorOriginalAntes = Number(parcela.valor);
+            const taxaOriginalAntes = Number(parcela.taxa);
+
+            let valorParcelaRestante = valorOriginalAntes;
+            let taxaParcelaRestante = taxaOriginalAntes;
+
+            const jurosPercent = Number(contractAtualizado.jurosPercent || 0);
+            const fatorJuros = jurosPercent / (100 + jurosPercent);
+
+            const totalJurosNaParcela = valorParcelaRestante * fatorJuros;
+            const totalPrincipalNaParcela = valorParcelaRestante - totalJurosNaParcela;
+
+            let abatidoTaxaNestaParcela = 0;
+            if (taxaDisponivel > 0 && taxaParcelaRestante > 0) {
+              abatidoTaxaNestaParcela = Math.min(taxaDisponivel, taxaParcelaRestante);
+              taxaParcelaRestante -= abatidoTaxaNestaParcela;
+              taxaDisponivel -= abatidoTaxaNestaParcela;
+            }
+
+            let jurosAbatidosNestaParcela = 0;
+            if (jurosDisponivel > 0 && totalJurosNaParcela > 0) {
+              jurosAbatidosNestaParcela = Math.min(jurosDisponivel, totalJurosNaParcela);
+              jurosDisponivel -= jurosAbatidosNestaParcela;
+            }
+
+            let principalAbatidoNestaParcela = 0;
+            if (principalDisponivel > 0 && totalPrincipalNaParcela > 0) {
+              principalAbatidoNestaParcela = Math.min(principalDisponivel, totalPrincipalNaParcela);
+              principalDisponivel -= principalAbatidoNestaParcela;
+            }
+
+            const abatidoValorNestaParcela = jurosAbatidosNestaParcela + principalAbatidoNestaParcela;
+            valorParcelaRestante -= abatidoValorNestaParcela;
+
+            if (abatidoValorNestaParcela > 0 || abatidoTaxaNestaParcela > 0) {
+              metaParcelasLog += `${parcela.id}:${abatidoValorNestaParcela}:${abatidoTaxaNestaParcela}|`;
+            }
+
+            await tx.contractInstallment.update({
+              where: { id: parcela.id },
+              data: {
+                valor: valorParcelaRestante,
+                taxa: taxaParcelaRestante,
+                status: valorParcelaRestante <= 0 && taxaParcelaRestante <= 0 ? "PAGO" : "PENDENTE",
+                dataPagamento: valorParcelaRestante <= 0 && taxaParcelaRestante <= 0 ? new Date() : null,
+              },
+            });
+          }
+
+          const todasParcelas = await tx.contractInstallment.findMany({
+            where: { contractId },
+          });
+
+          const novoSaldoPrincipal = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .reduce((acc, p) => acc + Number(p.valor), 0);
+
+          const novoSaldoTaxa = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .reduce((acc, p) => acc + Number(p.taxa), 0);
+
+          const proximaParcelaPendente = todasParcelas
+            .filter((p) => p.status === "PENDENTE")
+            .sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime())[0];
+
+          const novoVencimentoContrato = proximaParcelaPendente
+            ? new Date(proximaParcelaPendente.dataVencimento)
+            : new Date(contractAtualizado.vencimentoEm);
+
+          await tx.contract.update({
+            where: { id: contractId },
+            data: {
+              valorEmAberto: novoSaldoPrincipal,
+              taxa: novoSaldoTaxa,
+              vencimentoEm: novoVencimentoContrato,
+              status: novoSaldoPrincipal <= 0 && novoSaldoTaxa <= 0 ? "QUITADO" : "ABERTO",
+            },
+          });
+
+          // Se for parcelado, força injetar a tag na observação para o estorno ler perfeitamente
+          data.observacao = `${data.observacao || "Amortização de saldo"}[META:PARCELAS=${metaParcelasLog}]`;
+        }
+
+        await tx.paymentHistory.create({
+          data: {
+            contractId,
+            createdByUserId: userId,
+            tipo: data.tipo || "AMORTIZACAO",
+            valorPago: Number(data.valorPago),
+            pagoPrincipal: pagoPrincipalAcumulado,
+            pagoTaxa: pagoTaxaAcumulado,
+            pagoJuros: pagoJurosAcumulado,
+            multaCobrada: pagoTaxaAcumulado,
+            observacao: data.observacao || "Amortização de saldo declarada",
+            dataPagamento: new Date(),
+            dataReferencia: dataReferenciaAuditoria,
+          },
+        });
+
+        if (pagoPrincipalAcumulado > 0) {
+          await tx.user.update({
+            where: { id: userId },
+            data: {
+              saldoOperacional: { increment: pagoPrincipalAcumulado },
+            },
+          });
+        }
+      },
+      { timeout: 25000 }
+    );
+  }
+
+  /* ===============================
+         📊 SUMMARY FINANCEIRO
+   =============================== */
   static async financeSummary(startDate: Date, endDate: Date, userId: string) {
     const start = new Date(startDate);
     start.setUTCHours(0, 0, 0, 0);

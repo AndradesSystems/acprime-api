@@ -34,7 +34,8 @@ export const PaymentType = {
   JUROS: 'JUROS',
   PRINCIPAL: 'PRINCIPAL',
   MISTO: 'MISTO',
-  PERSONALIZADO: 'PERSONALIZADO'
+  PERSONALIZADO: 'PERSONALIZADO',
+  AMORTIZACAO: 'AMORTIZACAO'
 } as const
 
 export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType]

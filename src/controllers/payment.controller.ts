@@ -5,11 +5,11 @@ import { AppError } from "../middlewares/error.middleware";
 
 export class PaymentController {
 
- 
 
- /* ===============================
-        🗑️ EXCLUIR PAGAMENTO (Estorno)
-     =============================== */
+
+  /* ===============================
+         🗑️ EXCLUIR PAGAMENTO (Estorno)
+      =============================== */
 
   static async delete(
     req: Request,
@@ -32,6 +32,37 @@ export class PaymentController {
 
       return res.status(204).send();
     } catch (e) {
+      return next(e);
+    }
+  }
+
+  /* =========================================================
+          📉 CRIAÇÃO DE PAGAMENTO DE AMORTIZAÇÃO DIRETA
+       ========================================================= */
+  static async amortize(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    auth: AuthPayload // Mantendo o seu padrão de tipagem do middleware de autenticação
+  ) {
+    try {
+      const { contractId } = req.params;
+
+      if (!contractId || typeof contractId !== 'string') {
+        return res.status(400).json({ error: "ID do contrato é obrigatório." });
+      }
+
+      // Chama o service de amortização passando o body estruturado
+      const result = await PaymentService.amortize(
+        contractId,
+        req.body, // Espera a interface AmortizePaymentInput
+        auth.sub
+      );
+
+      // Retorna 201 (Created) ou 200 dependendo do seu padrão, mantendo o 201 do seu exemplo
+      return res.status(201).json(result);
+    } catch (e) {
+      // Repassa para o middleware de erro global (AppError)
       return next(e);
     }
   }
